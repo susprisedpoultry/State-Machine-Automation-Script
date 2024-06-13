@@ -1,7 +1,0 @@
-is_global = true
-build_property.ProjectDir = C:\Users\franc\Dev\State Machine Automation Script\
-build_property.ProjectDir = C:\Users\franc\Dev\State Machine Automation Script\
-build_property.Mdk-IgnorePaths = obj\**\*;MDK\**\*;**\*.debug.cs
-build_property.RootNamespace = IngameScript
-build_property.EnableComHosting = 
-build_property.EnableGeneratedComInterfaceComImportInterop = 
