@@ -23,10 +23,11 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.GameServices;
 using VRage.Generics;
+using VRage.Scripting;
 using VRageMath;
 using VRageRender;
 
-namespace SEStateMachine
+namespace IngameScript
 {
     public class StateMachine
     {
@@ -60,7 +61,7 @@ namespace SEStateMachine
             IMyTextSurfaceProvider cockpit = namedBlock as IMyTextSurfaceProvider;
 
             if (namedBlock == null)
-                throw new Exception("Block not found " + lcdName);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, lcdName));
 
             // If we didn't hit a surface right away, it is a cockpit or console
             if (_theSurface == null)
@@ -69,13 +70,12 @@ namespace SEStateMachine
 
                 if (_theSurface == null) 
                 {
-                    throw new Exception("Unable to get screen #" + screenIndex + " from block " + lcdName);
+                    throw new Exception(String.Format(Messages.SCREEN_NOT_FOUND, screenIndex, lcdName));
                 }
             }
 
             _theSurface.ContentType = ContentType.TEXT_AND_IMAGE;
             _theSurface.WriteText("State Machine Connected");
-
         }
 
         public string SerializeState()
@@ -97,7 +97,7 @@ namespace SEStateMachine
 
             if (!_states.TryGetValue(stateName, out _currentState))
             {
-                throw new Exception("ERROR: Can't Transition to '" + stateName + "' state not found");
+                throw new Exception(String.Format(Messages.STATE_NOT_FOUND, stateName));
             }            
 
             stateStatus("--");
@@ -143,7 +143,7 @@ namespace SEStateMachine
 
             if (!_states.TryGetValue(newStateName, out _nextState))
             {
-                stateStatus("ERROR: Can't Transition from " + _currentState.Name + " to " + newStateName + " state not found");
+                stateStatus(String.Format(Messages.STATE_NOT_FOUND,newStateName));
                 foreach(string state in _states.Keys)
                 {
                     stateStatus("S: '" + state + "'");
@@ -370,7 +370,7 @@ namespace SEStateMachine
             }
             else
             {
-                _machine.logError("Command " + command + " not valid in state " + Name);
+                _machine.logError(String.Format(Messages.CMD_NOT_VALID_IN_STATE, command, Name));
             }
         }        
 

@@ -26,7 +26,7 @@ using VRage.Generics;
 using VRageMath;
 using VRageRender;
 
-namespace SEStateMachine
+namespace IngameScript
 {
 
     public class ConnectorStateCondition : TransitionCondition 

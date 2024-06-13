@@ -25,10 +25,9 @@ using VRage.GameServices;
 using VRage.Generics;
 using VRageMath;
 using VRageRender;
-using SEStateMachine;
 using Sandbox.Game.Entities.Cube;
 
-namespace SEStateMachine
+namespace IngameScript
 {
 
     public class SetPositionAction : StateAction

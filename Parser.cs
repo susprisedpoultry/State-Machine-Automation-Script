@@ -1,34 +1,10 @@
-//using Sandbox.Game.EntityComponents;
-//using Sandbox.Game.GUI;
-//using Sandbox.ModAPI.Ingame;
-//using Sandbox.ModAPI.Interfaces;
-//using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
-//using System.Collections;
 using System.Collections.Generic;
-//using System.Collections.Immutable;
-//using System.Dynamic;
 using System.Linq;
-//using System.Reflection.Emit;
-//using System.Runtime.CompilerServices;
-//using System.Security.Permissions;
 using System.Text;
-//using VRage;
-//using VRage.Collections;
-//using VRage.Game;
-//using VRage.Game.Components;
-//using VRage.Game.GUI.TextPanel;
-//using VRage.Game.ModAPI.Ingame;
-//using VRage.Game.ModAPI.Ingame.Utilities;
-//using VRage.Game.ObjectBuilders.Definitions;
-//using VRage.GameServices;
-//using VRage.Generics;
-//using VRageMath;
-//using VRageRender;
 
-//using IngameScript;
 
-namespace SEStateMachine
+namespace IngameScript
 {
     public class Parser
     {
@@ -147,7 +123,7 @@ namespace SEStateMachine
 
                 if (functionToParse.Length==0) 
                 {
-                    throw new Exception("Missing function");
+                    throw new Exception(Messages.MISSING_FUNCTION);
                 }
 
                 // Make sure we have functionname(param) formatting
@@ -155,7 +131,7 @@ namespace SEStateMachine
                     (lastParenthese == -1) || 
                     (lastParenthese != (functionToParse.Length - 1)) )
                 {
-                    throw new Exception("Mismatched or missing parentheses in statement");
+                    throw new Exception(Messages.MISMATCHED_PAR);
                 }
                 
                 // Parse the function name and parameters
@@ -170,14 +146,14 @@ namespace SEStateMachine
                 if (_function == FN_COMMAND)
                 {
                     if ( (_parameters.Length != 1) ||  (_parameters[0].Length == 0))
-                        throw new Exception("Unexpected # of parameters for function : " + _function);
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
                 }
                 else if (_function == FN_CONECTTERMINAL)
                 {
                     if ( (_parameters.Length < 1) ||
                          (_parameters.Length > 2) ||  
                          (_parameters[0].Length == 0) )
-                        throw new Exception("Unexpected # of parameters for function : " + _function);
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
 
                     int testValue;
                     if ( (_parameters.Length == 2) &&
@@ -193,11 +169,11 @@ namespace SEStateMachine
                     if ( (_parameters.Length != 2) ||  
                         (_parameters[0].Length == 0) ||  
                         (_parameters[1].Length == 0))
-                        throw new Exception("Unexpected # of parameters for function : " + _function);
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
 
                     if (!CONNECTOR_STATES.Any(_parameters[1].Contains))
                     {
-                        throw new Exception("Invalid parameter for connector state : " + _parameters[1]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "connectorState", _parameters[1]));
                     }
                 }
                 else if (_function == FN_SENSORORSTATE)
@@ -205,11 +181,11 @@ namespace SEStateMachine
                     if ( (_parameters.Length != 2) ||  
                         (_parameters[0].Length == 0) ||  
                         (_parameters[1].Length == 0))
-                        throw new Exception("Unexpected # of parameters for function : " + _function);                    
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));                    
 
                     if (!SENSOR_STATES.Any(_parameters[1].Contains))
                     {
-                        throw new Exception("Invalid parameter for connector state : " + _parameters[1]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "sensorState", _parameters[1]));
                     }
                 }
                 else if (_function == FN_TRIGGERTIMER)
@@ -217,50 +193,50 @@ namespace SEStateMachine
                     if ( (_parameters.Length != 2) ||  
                         (_parameters[0].Length == 0) ||  
                         (_parameters[1].Length == 0))
-                        throw new Exception("Unexpected # of parameters for function : " + _function);                    
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));                    
 
                     if (!TIMER_TRIGER_TYPE.Any(_parameters[1].Contains))
                     {
-                        throw new Exception("Invalid parameter for connector state : " + _parameters[1]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "triggerType", _parameters[1]));
                     }
                 }
                 else if (_function == FN_SETANGLE)
                 {
                     if ( (_parameters.Length != 4) ||  
                         (_parameters[0].Length == 0))
-                        throw new Exception("Unexpected # of parameters for function : " + _function);
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
 
                     float testValue;
                     if (!Single.TryParse(_parameters[1], out testValue))
                     {
-                        throw new Exception("Invalid parameter for target angle : " + _parameters[1]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "targetAngle", _parameters[1]));
                     }
 
                     if (!Single.TryParse(_parameters[2], out testValue))
                     {
-                        throw new Exception("Invalid parameter for max speed : " + _parameters[2]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "maxRPM", _parameters[2]));
                     }
 
                     if (!ROTOR_DIRECTION_CUE.Any(_parameters[3].Contains))
                     {
-                        throw new Exception("Invalid parameter for angle cue : " + _parameters[1]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "direction", _parameters[3]));
                     }
                 }
                 else if (_function == FN_SETPOSITION)
                 {
                     if ( (_parameters.Length != 3) ||  
                         (_parameters[0].Length == 0))
-                        throw new Exception("Unexpected # of parameters for function : " + _function);
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
 
                     float testValue;
                     if (!Single.TryParse(_parameters[1], out testValue))
                     {
-                        throw new Exception("Invalid parameter for target position : " + _parameters[1]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "targetPosition", _parameters[1]));
                     }
 
                     if (!Single.TryParse(_parameters[2], out testValue))
                     {
-                        throw new Exception("Invalid parameter for max speed : " + _parameters[2]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "maxVelocity", _parameters[2]));
                     }
                 }
                 else if (_function == FN_SETVALUEFLOAT)
@@ -268,21 +244,21 @@ namespace SEStateMachine
                     if ( (_parameters.Length != 4) ||  
                         (_parameters[0].Length == 0) ||  
                         (_parameters[1].Length == 0))
-                        throw new Exception("Unexpected # of parameters for function : " + _function);
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
 
                     float testValue;
                     if (!Single.TryParse(_parameters[2], out testValue))
                     {
-                        throw new Exception("Invalid parameter for value : " + _parameters[1]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "value", _parameters[1]));
                     }
                     if (!Single.TryParse(_parameters[3], out testValue))
                     {
-                        throw new Exception("Invalid parameter for delay : " + _parameters[1]);
+                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "delay", _parameters[2]));
                     }
                 }
                 else 
                 {
-                    throw new Exception("Unknown function : " + _function);
+                    throw new Exception(String.Format(Messages.UNKNOWN_FUNCTION, _function));
                 }
 
             }
@@ -325,7 +301,7 @@ namespace SEStateMachine
                     {
                         if (line.Length != 0)
                         {
-                            throw new Exception("Missing command indicator " + COMMAND_MARKER);
+                            throw new Exception(Messages.NO_COMMAND);
                         }
                     }
                     else if ( 
@@ -348,7 +324,7 @@ namespace SEStateMachine
                     }
                     else
                     {
-                        throw new Exception("Unknown command " + parsedLine[0]);
+                        throw new Exception(String.Format(Messages.UNKNOWN_COMMAND, parsedLine[0]));
                     }
                 }
                 catch(Exception e)

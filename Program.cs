@@ -25,7 +25,6 @@ using VRage.GameServices;
 using VRage.Generics;
 using VRageMath;
 using VRageRender;
-using SEStateMachine;
 using System.CodeDom;
 
 namespace IngameScript
