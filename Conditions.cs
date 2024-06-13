@@ -46,7 +46,7 @@ namespace IngameScript
 
             if (_theConnector == null)
             {
-                throw new Exception("Connector not found " + connectorName);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, connectorName));
             }  
 
             if (targetStatus == STATE_LOCKED)
@@ -88,7 +88,7 @@ namespace IngameScript
 
             if (_theSensor == null)
             {
-                throw new Exception("Sensor not found " + sensorName);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, sensorName));
             }  
 
             _triggerOnEmpty = (triggerState == STATE_UNDETECTED);

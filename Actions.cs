@@ -50,7 +50,7 @@ namespace IngameScript
 
             if (_attachedPiston == null)
             {
-                throw new Exception("Piston not found " + pistonName);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, pistonName));
             }  
 
             _maxVelocity = Math.Abs(maxVelocity);
@@ -116,7 +116,7 @@ namespace IngameScript
 
             if (_attachedTimerBlock == null)
             {
-                throw new Exception("Timer Block not found " + _attachedTimerBlock);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, timerBlockName));
             }  
 
             _triggerMethod = triggerMethod;
@@ -162,7 +162,7 @@ namespace IngameScript
 
             if (_attachedRotor == null)
             {
-                throw new Exception("Rotor not found " + rotorName);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, rotorName));
             }  
 
             _maxRPM = Math.Abs(maxRPM);
@@ -239,12 +239,12 @@ namespace IngameScript
 
             if (_theBlock == null)
             {
-                throw new Exception("Block not found " + blockName);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, blockName));
             }  
 
             if (_theBlock.GetProperty(propertyName) == null)
             {
-                throw new Exception("Property '" + propertyName + "' not found for block " + blockName);
+                throw new Exception(String.Format(Messages.PROP_NOT_FOUND, propertyName, blockName));
             }
 
             _propertyName = propertyName;
@@ -294,7 +294,7 @@ namespace IngameScript
 
             if (_theConnector == null)
             {
-                throw new Exception("Connector not found " + connectorName);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, connectorName));
             }  
 
             if (desiredState == ConnectorStateCondition.STATE_LOCKED)
@@ -307,7 +307,7 @@ namespace IngameScript
             }
             else
             {
-                throw new Exception("Invalid parameter " + desiredState);
+                throw new Exception(String.Format(Messages.INVALID_PARAMETER, "desiredState", desiredState));
             }
         }
 

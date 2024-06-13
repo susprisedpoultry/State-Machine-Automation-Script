@@ -16,7 +16,7 @@ namespace IngameScript
         public static readonly string SCREEN_NOT_FOUND = "Unable to get screen #{0} from block {1}";
         public static readonly string STATE_NOT_FOUND = "Can't Transition to '{0}' state not found";
         public static readonly string CMD_NOT_VALID_IN_STATE = "Command {0} not valid in state {1}";
-
+        public static readonly string PROP_NOT_FOUND ="Property '{0}' not found for block {1}";
 
 
     }        
