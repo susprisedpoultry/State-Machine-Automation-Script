@@ -1,0 +1,54 @@
+Machine:Parking
+Action:ConnectTerminal(Garage Console, 0)
+When:Command(Reset)
+ThenGO:RESET
+
+State:UNKNOWN
+
+State:RESET
+When:ConnectorState(Parking Arm Connector, CONNECTED)
+ThenGo:ERROR
+Step:
+Action:TriggerTimer(ParkingArmMovingTimerBlock,NOW) # Start the warning lights
+Action:SetAngle(Parking Arm Advanced Rotor,0,2)
+Step:
+Action:SetPosition(Parking FB Piston,0,1)
+Action:SetPosition(Parking LR Piston,0,1)
+GO:STOWED
+
+State:STOWED
+Action:TriggerTimer(ParkingArmStoppedTimerBlock, NOW)
+When:Command(Park)
+ThenGO:PARKING
+
+State:PARKING
+Step:
+Action:TriggerTimer(ParkingArmMovingTimerBlock,NOW) #
+Action:SetPosition(Parking Arm Advanced Rotor,270,2,NEG)
+Step:
+Action:SetPosition(Parking LR Piston,3.5,2)
+Step:
+Action:SetPosition(Parking FB Piston,10,0.5)
+When:ConnectorState(Parking Arm Connector, READY)
+ThenGo:PARKING.Capture
+Go:ERROR
+Step:Capture
+Action:LockConnector(Parking Arm Connector)
+Step:
+Action:ChangeProperty(Parking Arm Advanced Rotor,-0.11,2) # Lift vehicle using rotor displacement
+Step:
+Action:SetPosition(Parking Arm Advanced Rotor,90,2)
+Step:
+Action:ChangeProperty(Parking Arm Advanced Rotor,0.11,2)
+Go:PARKED
+
+State:PARKED
+Action:TriggerTimer(ParkingArmStoppedTimerBlock,NOW) #
+When:Command(Park)
+ThenGO:PARKING
+When:ConnectorState(Parking Arm Connector, DISCONNECTED)
+And:SensorState(Parking Occupied Sensor, NOT_DETECTED)
+ThenGo:RESET
+
+State:ERROR
+
