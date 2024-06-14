@@ -71,7 +71,7 @@ namespace IngameScript
             currentState = null;
         }
 
-        private TransitionCondition ParseCondition(Parser.FunctionCommand whenCommand)
+        private ITransitionCondition ParseCondition(Parser.FunctionCommand whenCommand)
         {
             if (whenCommand.Function == Parser.FN_CONNECTORSTATE)
             {
@@ -120,7 +120,7 @@ namespace IngameScript
                 State currentState = null;
                 State parentState = null;
                 int substateCount = 0;
-                TransitionCondition activeCondition = null;
+                ITransitionCondition activeCondition = null;
                 Parser.FunctionCommand activeWhenCommand = null;
 
                 foreach (Parser.ParsedCommand command in configParser.Commands)

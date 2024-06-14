@@ -68,7 +68,7 @@ namespace IngameScript
             public string Name { get { return _name; }}
             public int Line { get { return _line; }}
 
-            public override string ToString()
+            public new string ToString()
             {
                 return _line + " : " + _name;
             }
@@ -83,7 +83,7 @@ namespace IngameScript
                 _description = description;
             }
 
-            public override string ToString()
+            public new string ToString()
             {
                 return base.ToString() + " : " + _description;
             }            
@@ -100,7 +100,7 @@ namespace IngameScript
 
             public string Parameter { get { return _parameter; }}
 
-            public override string ToString()
+            public new string ToString()
             {
                 return base.ToString() + " : " + _parameter;
             }            
@@ -263,7 +263,7 @@ namespace IngameScript
 
             }
 
-            public override string ToString()
+            public new string ToString()
             {
                 StringBuilder newString = new StringBuilder();
 

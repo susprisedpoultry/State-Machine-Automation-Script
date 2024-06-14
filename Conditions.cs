@@ -29,7 +29,7 @@ using VRageRender;
 namespace IngameScript
 {
 
-    public class ConnectorStateCondition : TransitionCondition 
+    public class ConnectorStateCondition : ITransitionCondition 
     {        
         public static readonly string STATE_LOCKED = "LOCKED";
         public static readonly string STATE_UNLOCKED = "UNLOCKED";
@@ -63,13 +63,13 @@ namespace IngameScript
             }            
         }
 
-        override public bool IsMet()
+        public bool IsMet()
         {
             return _theConnector.Status == _targetStatus;
         }         
     }
 
-    public class SensorStateCondition : TransitionCondition 
+    public class SensorStateCondition : ITransitionCondition 
     {
         public static readonly string STATE_DETECTED = "DETECTED";
         public static readonly string STATE_UNDETECTED = "UNDETECTED";
@@ -93,7 +93,7 @@ namespace IngameScript
             _triggerOnEmpty = (triggerState == STATE_UNDETECTED);
         }
 
-        override public bool IsMet()
+        public bool IsMet()
         {
             return _theSensor.LastDetectedEntity.IsEmpty() == _triggerOnEmpty;
         }         

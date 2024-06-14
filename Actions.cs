@@ -30,8 +30,9 @@ using Sandbox.Game.Entities.Cube;
 namespace IngameScript
 {
 
-    public class SetPositionAction : StateAction
+    public class SetPositionAction : IStateAction
     {
+        private StateMachine _theMachine;
         private IMyPistonBase _attachedPiston;
         private float _maxVelocity;
         private float _targetPosition;
@@ -44,8 +45,9 @@ namespace IngameScript
         public SetPositionAction(StateMachine theMachine, 
                                  string pistonName, 
                                  float targetPosition,
-                                 float maxVelocity) : base(theMachine)
+                                 float maxVelocity)
         {
+            _theMachine = theMachine;
             _attachedPiston = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(pistonName) as IMyPistonBase;  
 
             if (_attachedPiston == null)
@@ -57,22 +59,22 @@ namespace IngameScript
             _targetPosition = targetPosition;
         }
 
-        override public bool IsDone()
+        public bool IsDone()
         {
             return _isOnTarget;
         }
 
-        override public void OnEnter()
+        public void OnEnter()
         {
             _isOnTarget = false;
         }
 
-        override public void OnExit()
+        public void OnExit()
         {
             _attachedPiston.Velocity = 0;            
         }
 
-        public override void OnTick(int tickCount)
+        public void OnTick()
         {
             float distance = _targetPosition - _attachedPiston.CurrentPosition;
             float directionMultiplier = 1f;
@@ -102,7 +104,7 @@ namespace IngameScript
         }
     } 
 
-    public class TriggerTimerAction : StateAction
+    public class TriggerTimerAction : IStateAction
     {
         public static readonly string TRIGGER_METHOD_NOW = "NOW";
         public static readonly string TRIGGER_METHOD_START = "START";
@@ -110,7 +112,7 @@ namespace IngameScript
         private IMyTimerBlock _attachedTimerBlock;
         private string _triggerMethod;
 
-        public TriggerTimerAction(StateMachine theMachine, string timerBlockName, string triggerMethod) : base(theMachine)
+        public TriggerTimerAction(StateMachine theMachine, string timerBlockName, string triggerMethod)
         {
             _attachedTimerBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(timerBlockName) as IMyTimerBlock;  
 
@@ -122,7 +124,7 @@ namespace IngameScript
             _triggerMethod = triggerMethod;
         }
 
-        override public void OnEnter()
+        public void OnEnter()
         {
             if (_triggerMethod == TRIGGER_METHOD_NOW)
             {
@@ -133,9 +135,24 @@ namespace IngameScript
                 _attachedTimerBlock.StartCountdown();
             }
         }
+
+        public void OnExit()
+        {
+
+        }
+
+        public void OnTick()
+        {
+            
+        }
+
+        public bool IsDone()
+        {
+            return true;
+        }
     } 
 
-    public class TurnRotorAction : StateAction
+    public class TurnRotorAction : IStateAction
     {
         public static readonly string ROTOR_DIRECTION_ANY = "ANY";
         public static readonly string ROTOR_DIRECTION_POSITIVE = "POS";
@@ -156,7 +173,7 @@ namespace IngameScript
                                string rotorName, 
                                float targetAngle, 
                                float maxRPM,
-                               string direction) : base(theMachine)
+                               string direction)
         {
             _attachedRotor = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(rotorName) as IMyMotorStator;
 
@@ -171,17 +188,17 @@ namespace IngameScript
             _isOnTarget = false;
         }
 
-        override public bool IsDone()
+        public bool IsDone()
         {
             return _isOnTarget;
         }
 
-        override public void OnEnter()
+        public void OnEnter()
         {
             _isOnTarget = false;
         }
 
-        public override void OnTick(int tickCount)
+        public void OnTick()
         {
             float targetAngleInRAD = _targetAngle / 57.2957795f;
             float distanceInRAD = targetAngleInRAD - _attachedRotor.Angle;
@@ -211,17 +228,18 @@ namespace IngameScript
             }
         }
 
-        override public void OnExit()
+        public void OnExit()
         {
             _attachedRotor.TargetVelocityRPM = 0;            
         }
 
     } 
 
-    public class SetValueFloatAction : StateAction
+    public class SetValueFloatAction : IStateAction
     {
         private static readonly int TICK_SKIP_COUNT = 6;
 
+        private StateMachine _theMachine;
         private IMyTerminalBlock _theBlock;
         private string _propertyName;
         private float _targetValue;
@@ -233,8 +251,9 @@ namespace IngameScript
                                 string blockName, 
                                 string propertyName, 
                                 float targetValue, 
-                                float transitionDuration) : base(theMachine)
+                                float transitionDuration)
         {
+            _theMachine = theMachine;
             _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(blockName) as IMyTerminalBlock;
 
             if (_theBlock == null)
@@ -254,18 +273,20 @@ namespace IngameScript
                 _delayInTicks = 1;
         }
 
-        override public bool IsDone()
+        public bool IsDone()
         {
             return (_currentTick >= _delayInTicks);
         }
 
-        override public void OnEnter()
+        public void OnExit() {}
+
+        public void OnEnter()
         {
             _startingValue = _theBlock.GetValueFloat(_propertyName);
             _currentTick = 0;
         }
 
-        public override void OnTick(int tickCount)
+        public void OnTick()
         {
             int ticksRemaining = _delayInTicks - (++_currentTick);
 
@@ -281,15 +302,17 @@ namespace IngameScript
         }
     }
 
-    public class LockConnectorAction : StateAction
+    public class LockConnectorAction : IStateAction
     {
+        StateMachine _theMachine;
         private IMyShipConnector _theConnector;
         private MyShipConnectorStatus _desiredState;
 
         public LockConnectorAction(StateMachine theMachine, 
                                 string connectorName, 
-                                string desiredState) : base(theMachine)
+                                string desiredState)
         {
+            _theMachine = theMachine;
             _theConnector = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(connectorName) as IMyShipConnector;  
 
             if (_theConnector == null)
@@ -311,13 +334,16 @@ namespace IngameScript
             }
         }
 
-        override public bool IsDone()
+        public bool IsDone()
         {
             _theMachine.stateStatus("C " + _theConnector.Status.ToString());
             return _theConnector.Status == _desiredState;
         }
 
-        override public void OnEnter()
+        public void OnExit() {}
+        public void OnTick() {}
+
+        public void OnEnter()
         {
             if (_desiredState == MyShipConnectorStatus.Connected)
             {

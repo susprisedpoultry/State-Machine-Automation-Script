@@ -51,8 +51,7 @@ namespace IngameScript
         }
 
         // Properties
-        public MyGridProgram TheProgram { get { return _theProgram; }
-        }
+        public MyGridProgram TheProgram { get { return _theProgram; } }
         public State ActiveState { get { return _currentState; } }
 
         public void ConnectTerminal(string lcdName, int screenIndex = 0)
@@ -113,7 +112,7 @@ namespace IngameScript
             _commandTransitions.Add(command, targetState);
         }
 
-        public void AddTransition(TransitionCondition condition, string targetState)
+        public void AddTransition(ITransitionCondition condition, string targetState)
         {
             _conditions.Add(new TransitionWithCondition(condition, targetState));
         }        
@@ -151,10 +150,32 @@ namespace IngameScript
             }
         }
 
+        private bool CheckTransitions()
+        {
+            // Otherwise, test for transitions in-state first
+            if (_currentState.CheckTransitions()) 
+                return true;
+
+            // Then check global transitions
+            foreach(TransitionWithCondition transition in _conditions)
+            {
+                if (transition.Condition.IsMet()) 
+                {
+                    transitionTo(transition.TargetState);
+
+                    return true;
+                }
+            }   
+
+            return false;
+        }
+
         public void OnTick()
         {
             try 
             {
+                // Are we in a transition change, do that, otherwise, do a transition check and then 
+                // the OnTick() method for the state
                 if (_nextState != null)
                 {
                     _currentState.OnExit();
@@ -163,25 +184,9 @@ namespace IngameScript
                     stateStatus("Switched to state");
                     _currentState.OnEnter();
                 }            
-                else 
-                {
-                    _currentState.OnTick(0);
-
-                    // If we didn't trigger a state transition inside the state, 
-                    // Check the global transitions
-                    if (_nextState == null)
-                    {
-                        foreach(TransitionWithCondition transition in _conditions)
-                        {
-                            if (transition.Condition.IsMet()) 
-                            {
-                                transitionTo(transition.TargetState);
-
-                                // Shortcut the testing
-                                return;
-                            }
-                        }          
-                    }      
+                else if (!CheckTransitions())
+                {                    
+                    _currentState.OnTick();
                 }
             }
             catch (Exception e)
@@ -217,64 +222,34 @@ namespace IngameScript
         }
     }
 
-    public class StateAction
+    public interface IStateAction
     {
-        protected StateMachine _theMachine;
-
-        public StateAction(StateMachine theMachine)
-        {
-            _theMachine = theMachine;
-        }
-
-        virtual public bool IsDone()
-        {
-            return true;
-        }
-
-        virtual public void OnEnter()
-        {
-
-        }
-
-        virtual public void OnExit()
-        {
-
-        }
-
-        virtual public void OnTick(int tickCount)
-        {
-        }
-
+        bool IsDone();
+        void OnEnter();
+        void OnExit();        
+        void OnTick();
     }
 
-    public class TransitionCondition
+    public interface ITransitionCondition
     {
-        public TransitionCondition()
-        {
-
-        }
-
-        virtual public bool IsMet()
-        {
-            return true;
-        } 
+        bool IsMet();
     }
 
-    public class TransitionAndCondition : TransitionCondition 
+    public class TransitionAndCondition : ITransitionCondition 
     {
         private StateMachine _theMachine;
 
-        TransitionCondition _condition1;
-        TransitionCondition _condition2;
+        ITransitionCondition _condition1;
+        ITransitionCondition _condition2;
 
-        public TransitionAndCondition(StateMachine theMachine, TransitionCondition condition1, TransitionCondition condition2)
+        public TransitionAndCondition(StateMachine theMachine, ITransitionCondition condition1, ITransitionCondition condition2)
         {
             _theMachine = theMachine;
             _condition1 = condition1;
             _condition2 = condition2;
         }
 
-        override public bool IsMet()
+        public bool IsMet()
         {
             _theMachine.stateStatus("Condition " + _condition1.IsMet() + ", " + _condition2.IsMet());
             //return false;
@@ -284,10 +259,10 @@ namespace IngameScript
 
     public struct TransitionWithCondition
     {
-        public readonly TransitionCondition Condition;
+        public readonly ITransitionCondition Condition;
         public readonly string TargetState;
 
-        public TransitionWithCondition(TransitionCondition condition, string targetState)
+        public TransitionWithCondition(ITransitionCondition condition, string targetState)
         {
             Condition = condition;
             TargetState = targetState;
@@ -297,10 +272,11 @@ namespace IngameScript
     public class State 
     {    
         private StateMachine _machine;
+        private State _parentState = null;
         private readonly string _name;
         private string _doneStateName = null;
         private List<TransitionWithCondition> _conditions = new List<TransitionWithCondition>();
-        private List<StateAction> _actions = new List<StateAction>();
+        private List<IStateAction> _actions = new List<IStateAction>();
         private Dictionary<string, string> _commandTransitions = new Dictionary<string, string>();
 
         public State(StateMachine stateMachine, String name) 
@@ -315,7 +291,7 @@ namespace IngameScript
 
         virtual public void OnEnter()
         {
-            foreach(StateAction action in _actions)
+            foreach(IStateAction action in _actions)
             {
                 action.OnEnter();
             }       
@@ -323,13 +299,13 @@ namespace IngameScript
 
         virtual public void OnExit()
         {
-            foreach(StateAction action in _actions)
+            foreach(IStateAction action in _actions)
             {
                 action.OnExit();
             }       
         }
 
-        virtual public void OnTick(int tickCount)
+        public bool CheckTransitions()
         {
             foreach(TransitionWithCondition transition in _conditions)
             {
@@ -338,14 +314,24 @@ namespace IngameScript
                     _machine.transitionTo(transition.TargetState);
 
                     // Shortcut the testing
-                    return;
+                    return true;
                 }
             }
 
-            bool areWeDone = true;
-            foreach(StateAction action in _actions)
+            if (_parentState != null) 
             {
-                action.OnTick(tickCount);
+                return _parentState.CheckTransitions();
+            }
+
+            return false;
+        }
+
+        public void OnTick()
+        {
+            bool areWeDone = true;
+            foreach(IStateAction action in _actions)
+            {
+                action.OnTick();
 
                 areWeDone &= action.IsDone();
             }       
@@ -360,7 +346,7 @@ namespace IngameScript
             }
         }
 
-        virtual public void OnCommand(string command)
+        public void OnCommand(string command)
         {
             string newState;
 
@@ -368,22 +354,21 @@ namespace IngameScript
             {
                 _machine.transitionTo(newState);
             }
-            else
+            else 
             {
-                _machine.logError(String.Format(Messages.CMD_NOT_VALID_IN_STATE, command, Name));
+                _parentState?.OnCommand(command);
             }
         }        
 
         public State AddSubState(State stateToAdd) 
         {
-            // TODO: transfer commands to sub-state
-
+            stateToAdd._parentState = this;
             _machine.AddState(stateToAdd);
 
             return stateToAdd;
         }
 
-        public State AddTransition(TransitionCondition condition, string targetState)
+        public State AddTransition(ITransitionCondition condition, string targetState)
         {
             _conditions.Add(new TransitionWithCondition(condition, targetState));
 
@@ -398,7 +383,7 @@ namespace IngameScript
 
         public string TransitionWhenDone { set {  _doneStateName = value; } get { return _doneStateName;} }
 
-        public State AddAction(StateAction action)
+        public State AddAction(IStateAction action)
         {
             _actions.Add(action);
             return this;
