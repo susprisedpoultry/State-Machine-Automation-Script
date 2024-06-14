@@ -1,11 +1,56 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
-
 
 namespace IngameScript
 {
+    public class ConnectorStates {
+        public static readonly string LOCKED = "LOCKED";
+        public static readonly string UNLOCKED = "UNLOCKED";
+        public static readonly string READY = "READY";
+    }
+
+    public class RotorDirection {
+        public static readonly string ANY = "ANY";
+        public static readonly string POSITIVE = "POS";
+        public static readonly string NEGATIVE = "NEG";
+    }
+
+    public class EnabledStates {
+        public static readonly string ENABLED = "ENABLED";
+        public static readonly string DISABLED = "DISABLED";
+    }
+
+    public class SensorStates {
+        public static readonly string DETECTED = "DETECTED";
+        public static readonly string UNDETECTED = "UNDETECTED";
+    }
+
+    public class TimerTriggerType {
+        public static readonly string NOW = "NOW";
+        public static readonly string START = "START";
+    }
+    
+    public class Functions {
+        public static readonly string COMMAND = "Command";
+        public static readonly string CONNECTORSTATE = "ConnectorState";
+        public static readonly string SENSORORSTATE = "SensorState";
+        public static readonly string CONECTTERMINAL = "ConnectTerminal";
+        public static readonly string TRIGGERTIMER = "TriggerTimer";
+        public static readonly string SETENABLED = "SetEnabled";
+        public static readonly string SETANGLE = "SetAngle";
+        public static readonly string SETPOSITION = "SetPosition";
+        public static readonly string LOCKCONNECTOR = "LockConnector";
+        public static readonly string SETVALUEFLOAT = "SetValueFloat";
+        public static readonly string SETLIGHTCOLOR = "SetLightColor";
+        public static readonly string RGB = "RGB";        
+    }
+
     public class Parser
     {
         // Parser Keywords
@@ -18,33 +63,29 @@ namespace IngameScript
         public static readonly string TK_THENGO = "ThenGo";
         public static readonly string TK_AND = "And";
 
-        public static readonly string FN_COMMAND = "Command";
-        public static readonly string FN_CONNECTORSTATE = "ConnectorState";
-        public static readonly string FN_SENSORORSTATE = "SensorState";
-        public static readonly string FN_CONECTTERMINAL = "ConnectTerminal";
-        public static readonly string FN_TRIGGERTIMER = "TriggerTimer";
-        public static readonly string FN_SETANGLE = "SetAngle";
-        public static readonly string FN_SETPOSITION = "SetPosition";
-        public static readonly string FN_LOCKCONNECTOR = "LockConnector";
-        public static readonly string FN_SETVALUEFLOAT = "SetValueFloat";
-
         private static readonly char COMMENT_MARKER = '#';        
         private static readonly char COMMAND_MARKER = ':';        
         private static readonly char OPEN_PAR = '(';        
         private static readonly char CLOSE_PAR = ')';        
         private static readonly char PARAM_SEPARATOR = ',';        
         private static readonly char LINE_SEPARATOR = '\n';        
+        private static readonly char[] PARSING_TOKENS = {OPEN_PAR, CLOSE_PAR,PARAM_SEPARATOR};
 
-        public static readonly string[] ROTOR_DIRECTION_CUE = { TurnRotorAction.ROTOR_DIRECTION_ANY, 
-                                                                TurnRotorAction.ROTOR_DIRECTION_POSITIVE, 
-                                                                TurnRotorAction.ROTOR_DIRECTION_NEGATIVE};
-        public static readonly string[] CONNECTOR_STATES = { ConnectorStateCondition.STATE_LOCKED,
-                                                             ConnectorStateCondition.STATE_UNLOCKED,
-                                                             ConnectorStateCondition.STATE_READY};
-        public static readonly string[] SENSOR_STATES = { SensorStateCondition.STATE_DETECTED,
-                                                          SensorStateCondition.STATE_UNDETECTED};
-        public static readonly string[] TIMER_TRIGER_TYPE = { TriggerTimerAction.TRIGGER_METHOD_NOW, 
-                                                              TriggerTimerAction.TRIGGER_METHOD_START};
+
+        public static readonly string[] ROTOR_DIRECTION_CUE = { RotorDirection.ANY, 
+                                                                RotorDirection.POSITIVE, 
+                                                                RotorDirection.NEGATIVE};
+
+        public static readonly string[] ENABLED_STATES = { EnabledStates.ENABLED,
+                                                           EnabledStates.DISABLED};
+
+        public static readonly string[] CONNECTOR_STATES = { ConnectorStates.LOCKED,
+                                                             ConnectorStates.UNLOCKED,
+                                                             ConnectorStates.READY};
+        public static readonly string[] SENSOR_STATES = { SensorStates.DETECTED,
+                                                          SensorStates.UNDETECTED};
+        public static readonly string[] TIMER_TRIGER_TYPE = { TimerTriggerType.NOW, 
+                                                              TimerTriggerType.START};
 
 
         private List<ParsedCommand> _commands;
@@ -53,6 +94,275 @@ namespace IngameScript
         {
             get { return _commands; }
         }
+
+
+
+        public struct Color {
+            public readonly int Red;
+            public readonly int Green;
+            public readonly int Blue;
+
+            public Color(int red, int green, int blue ) { Red = red; Green = green; Blue = blue;}
+        }
+
+        private static string[] Tokenize(string stringToTokenize)
+        {
+            List<string> tokenList = new List<string>();
+            StringBuilder stringToken = new StringBuilder();
+
+            for(int i=0;i<stringToTokenize.Length;i++)
+            {
+                if (PARSING_TOKENS.Contains(stringToTokenize[i]))
+                {
+                    if (stringToken.Length != 0) 
+                    {
+                        tokenList.Add(stringToken.ToString().Trim());
+                        stringToken = new StringBuilder();
+                    }
+
+                    tokenList.Add(stringToTokenize[i].ToString());
+                }
+                else
+                {
+                    stringToken.Append(stringToTokenize[i]);
+                }
+            }            
+
+            // Add the last token if we have it
+            if (stringToken.Length != 0) 
+            {
+                tokenList.Add(stringToken.ToString().Trim());
+                stringToken = new StringBuilder();
+            }
+
+            return tokenList.ToArray();
+        }
+
+        public class ParsedParameter
+        {
+            public virtual new String ToString() {
+                return "";
+            }
+        }
+
+        public class ParsedStringParameter : ParsedParameter
+        {
+            private string _value;
+
+            public string Value { get { return _value;}}
+            public ParsedStringParameter(string value) { _value = value ;}
+            public override string ToString() { return _value; }
+        }
+
+        public class ParsedFunctionParameter : ParsedParameter
+        {
+            private readonly string _name;
+            private List<ParsedParameter> _parameters = new List<ParsedParameter>();
+
+            public string Name { get { return _name; }}
+            //public ParsedParameter[] Parameters { get { return _parameters.ToArray(); }}
+            public int ParamCount { get { return _parameters.Count; }}
+
+            public ParsedFunctionParameter(string name)
+            {
+                _name = name;
+            }
+
+            public bool IsFunctionMatch(string functionName, int maxParams)
+            {
+                if (Name == functionName)
+                {
+                    if (ParamCount > maxParams) 
+                    {
+                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, Name));
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            public void AddParam(ParsedParameter param) 
+            {
+                _parameters.Add(param);
+            }
+
+            private ParsedParameter GetParam(int paramIndex, string paramName)
+            {
+                if (paramIndex >= _parameters.Count())
+                {
+                    throw new Exception(String.Format(Messages.MISSING_PARAMETER_IN_FUNC, paramName, Name));
+                } 
+
+                return _parameters[paramIndex];
+            }
+
+            public int GetIntParam(int paramIndex, string paramName)
+            {
+                string rawParameter = GetStringParam(paramIndex, paramName);
+                int paramValue = 0;
+
+                if (!Int32.TryParse(rawParameter, out paramValue))
+                {
+                    throw new Exception(String.Format(Messages.INVALID_PARAMETER, paramName, rawParameter));
+                }
+
+                return paramValue;
+            }
+
+            public float GetFloatParam(int paramIndex, string paramName)
+            {
+                string rawParameter = GetStringParam(paramIndex, paramName);
+                float paramValue = 0;
+
+                if (!Single.TryParse(rawParameter, out paramValue))
+                {
+                    throw new Exception(String.Format(Messages.INVALID_PARAMETER, paramName, rawParameter));
+                }
+
+                return paramValue;
+            }
+
+            public Parser.Color GetColorParam(int paramIndex, string paramName)
+            {
+                ParsedFunctionParameter param = GetParam(paramIndex, paramName) as ParsedFunctionParameter;
+
+                if ( (param == null) || (param.Name != Functions.RGB) )
+                {
+                    throw new Exception(String.Format(Messages.INVALID_PARAMETER, paramName, _parameters[paramIndex].ToString()));
+                }
+
+                return new Color(param.GetIntParam(0, "red"),
+                                 param.GetIntParam(1, "green"),
+                                 param.GetIntParam(2, "blue"));
+            }
+
+
+            public string GetStringParam(int paramIndex, string paramName)
+            {
+                ParsedStringParameter param = GetParam(paramIndex, paramName) as ParsedStringParameter;
+
+                if (param == null)
+                {
+                    throw new Exception(String.Format(Messages.INVALID_PARAMETER, paramName, _parameters[paramIndex].ToString()));
+                }
+
+                return param.Value;
+            }
+
+            public string GetValidatedStringParam(int paramIndex, string paramName, string[] validValues)
+            {
+                string paramValue = GetStringParam(paramIndex, paramName);
+
+                if (!validValues.Contains(paramValue))
+                {
+                    throw new Exception(String.Format(Messages.INVALID_PARAMETER, paramName, paramValue));
+                }
+
+                return paramValue;
+            }
+
+
+            public override string ToString()
+            {
+                StringBuilder newString = new StringBuilder();
+                bool firstParam = true;
+
+                newString.Append(Name);
+                newString.Append("( ");
+
+                foreach(ParsedParameter parameter in _parameters)
+                {
+                    if (!firstParam)
+                        newString.Append(", ");
+
+                    newString.Append(parameter.ToString());
+                    firstParam=false;
+                }
+
+                newString.Append(")");
+
+                return newString.ToString();
+            }
+        }
+
+
+        private static ParsedFunctionParameter ParseFunction(string[] tokenizedString)
+        {
+            int tokenCursor = 0;
+
+            ParsedFunctionParameter newFunction = Parser.ParseFunction(tokenizedString, ref tokenCursor);
+
+            if (tokenCursor != tokenizedString.Length)
+            {
+                throw new Exception(String.Format("Unexpected value {0}", tokenizedString[tokenCursor]));
+            }
+
+            return newFunction;        
+        }
+
+        private static ParsedFunctionParameter ParseFunction(string[] tokenizedString, ref int parseCursor)
+        {
+
+            int cursorPosition = parseCursor;
+            string functionName;
+
+            // We're expecting <function name>(
+            if (PARSING_TOKENS.Contains(tokenizedString[cursorPosition][0]))
+            {
+                throw new Exception(String.Format("Expected function name, found {0}", tokenizedString[cursorPosition][0]));
+            }
+            functionName = tokenizedString[cursorPosition];
+            cursorPosition++;
+            if (OPEN_PAR != tokenizedString[cursorPosition][0])
+            {
+                throw new Exception(String.Format("Expected '(', found {0}", tokenizedString[cursorPosition][0]));
+            }
+            cursorPosition++;
+
+            ParsedFunctionParameter newFunctionParam = new ParsedFunctionParameter(functionName);
+
+            while (cursorPosition < tokenizedString.Length)
+            {
+                // If we encounter a closed parameter, we're successful, we parsed a function
+                if (CLOSE_PAR == tokenizedString[cursorPosition][0])
+                {
+                    // Let the parent know where they need to continue                    
+                    parseCursor = cursorPosition + 1;
+                    return newFunctionParam;
+                }
+
+                // If we already parsed parameters, we are expecting a comma
+                if ( (newFunctionParam.ParamCount > 0) && (PARAM_SEPARATOR != tokenizedString[cursorPosition++][0]))
+                {
+                    throw new Exception(String.Format("Expecting {0}", PARAM_SEPARATOR));
+                }
+
+                // we can try parsing an inner function
+                try 
+                {
+                    newFunctionParam.AddParam(ParseFunction(tokenizedString, ref cursorPosition));
+                    continue;
+                }
+                catch (Exception)
+                {
+                    // Ignore this exception, we just didn't find a function
+                }
+
+                if (PARSING_TOKENS.Contains(tokenizedString[cursorPosition][0]))
+                {
+                    throw new Exception(String.Format("Expecting a parameter value, got {0}", tokenizedString[cursorPosition][0]));
+                }
+
+                newFunctionParam.AddParam(new ParsedStringParameter(tokenizedString[cursorPosition]));
+                cursorPosition++;                
+            }
+
+            // If we get here, we are missing a parenthesis
+            throw new Exception(String.Format("Expecting {0}", CLOSE_PAR));
+        }
+
 
         public class ParsedCommand
         {
@@ -68,7 +378,7 @@ namespace IngameScript
             public string Name { get { return _name; }}
             public int Line { get { return _line; }}
 
-            public new string ToString()
+            public virtual new string ToString()
             {
                 return _line + " : " + _name;
             }
@@ -83,7 +393,7 @@ namespace IngameScript
                 _description = description;
             }
 
-            public new string ToString()
+            public override string ToString()
             {
                 return base.ToString() + " : " + _description;
             }            
@@ -100,7 +410,7 @@ namespace IngameScript
 
             public string Parameter { get { return _parameter; }}
 
-            public new string ToString()
+            public override string ToString()
             {
                 return base.ToString() + " : " + _parameter;
             }            
@@ -108,178 +418,29 @@ namespace IngameScript
 
         public class FunctionCommand : ParsedCommand
         {
-            private readonly string _function;
-            private readonly string[] _parameters;
-
-            public string Function { get { return _function; }}
-            public string[] Parameters { get { return _parameters; }}
+            private readonly ParsedFunctionParameter _function;
+            public ParsedFunctionParameter Function { get { return _function; }}
 
             public FunctionCommand(int line, string name, string functionToParse) : base(line, name)
             {
-                functionToParse = functionToParse.Trim(); 
+                string[] tokenizedString = Parser.Tokenize(functionToParse);
 
-                int firstParenthese = functionToParse.IndexOf(OPEN_PAR);
-                int lastParenthese = functionToParse.LastIndexOf(CLOSE_PAR);
+                _function = Parser.ParseFunction(tokenizedString);
 
-                if (functionToParse.Length==0) 
-                {
-                    throw new Exception(Messages.MISSING_FUNCTION);
-                }
-
-                // Make sure we have functionname(param) formatting
-                if ( (firstParenthese <= 0) || 
-                    (lastParenthese == -1) || 
-                    (lastParenthese != (functionToParse.Length - 1)) )
-                {
-                    throw new Exception(Messages.MISMATCHED_PAR);
-                }
-                
-                // Parse the function name and parameters
-                _function = functionToParse.Substring(0, firstParenthese);
-                _parameters = functionToParse.Substring(firstParenthese + 1, (lastParenthese - firstParenthese) - 1).Split(PARAM_SEPARATOR);
-
-                for(int i=0;i<_parameters.Length;i++)
-                {
-                    _parameters[i] = _parameters[i].Trim();
-                }
-
-                if (_function == FN_COMMAND)
-                {
-                    if ( (_parameters.Length != 1) ||  (_parameters[0].Length == 0))
-                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
-                }
-                else if (_function == FN_CONECTTERMINAL)
-                {
-                    if ( (_parameters.Length < 1) ||
-                         (_parameters.Length > 2) ||  
-                         (_parameters[0].Length == 0) )
-                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
-
-                    int testValue;
-                    if ( (_parameters.Length == 2) &&
-                         (!Int32.TryParse(_parameters[1], out testValue)) )
-                    {
-                        throw new Exception("Invalid parameter for terminal index : " + _parameters[1]);
-                    }
-                }
-                else if ( 
-                    (_function == FN_CONNECTORSTATE) || 
-                    (_function == FN_LOCKCONNECTOR) )
-                {
-                    if ( (_parameters.Length != 2) ||  
-                        (_parameters[0].Length == 0) ||  
-                        (_parameters[1].Length == 0))
-                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
-
-                    if (!CONNECTOR_STATES.Any(_parameters[1].Contains))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "connectorState", _parameters[1]));
-                    }
-                }
-                else if (_function == FN_SENSORORSTATE)
-                {
-                    if ( (_parameters.Length != 2) ||  
-                        (_parameters[0].Length == 0) ||  
-                        (_parameters[1].Length == 0))
-                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));                    
-
-                    if (!SENSOR_STATES.Any(_parameters[1].Contains))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "sensorState", _parameters[1]));
-                    }
-                }
-                else if (_function == FN_TRIGGERTIMER)
-                {
-                    if ( (_parameters.Length != 2) ||  
-                        (_parameters[0].Length == 0) ||  
-                        (_parameters[1].Length == 0))
-                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));                    
-
-                    if (!TIMER_TRIGER_TYPE.Any(_parameters[1].Contains))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "triggerType", _parameters[1]));
-                    }
-                }
-                else if (_function == FN_SETANGLE)
-                {
-                    if ( (_parameters.Length != 4) ||  
-                        (_parameters[0].Length == 0))
-                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
-
-                    float testValue;
-                    if (!Single.TryParse(_parameters[1], out testValue))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "targetAngle", _parameters[1]));
-                    }
-
-                    if (!Single.TryParse(_parameters[2], out testValue))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "maxRPM", _parameters[2]));
-                    }
-
-                    if (!ROTOR_DIRECTION_CUE.Any(_parameters[3].Contains))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "direction", _parameters[3]));
-                    }
-                }
-                else if (_function == FN_SETPOSITION)
-                {
-                    if ( (_parameters.Length != 3) ||  
-                        (_parameters[0].Length == 0))
-                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
-
-                    float testValue;
-                    if (!Single.TryParse(_parameters[1], out testValue))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "targetPosition", _parameters[1]));
-                    }
-
-                    if (!Single.TryParse(_parameters[2], out testValue))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "maxVelocity", _parameters[2]));
-                    }
-                }
-                else if (_function == FN_SETVALUEFLOAT)
-                {
-                    if ( (_parameters.Length != 4) ||  
-                        (_parameters[0].Length == 0) ||  
-                        (_parameters[1].Length == 0))
-                        throw new Exception(String.Format(Messages.UNEXPECTED_PAR_IN_FUNC, _function));
-
-                    float testValue;
-                    if (!Single.TryParse(_parameters[2], out testValue))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "value", _parameters[1]));
-                    }
-                    if (!Single.TryParse(_parameters[3], out testValue))
-                    {
-                        throw new Exception(String.Format(Messages.INVALID_PARAMETER, "delay", _parameters[2]));
-                    }
-                }
-                else 
-                {
-                    throw new Exception(String.Format(Messages.UNKNOWN_FUNCTION, _function));
-                }
-
+                // TODO: Validate parameter count?
             }
 
-            public new string ToString()
+            public override string ToString()
             {
                 StringBuilder newString = new StringBuilder();
 
-                newString.Append(base.ToString() + " : " + _function + " ( ");
-                
-                for(int i = 0;i<_parameters.Length;i++) 
-                {
-                    if (i>0)
-                        newString.Append(", ");
-
-                    newString.Append(_parameters[i].ToString());
-                }
-                newString.Append(" )");
+                newString.Append(base.ToString());
+                newString.Append(" : ");
+                newString.Append(_function.ToString());
 
                 return newString.ToString();
             }            
+           
         }
 
         public Parser(string scriptToParse)

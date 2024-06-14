@@ -9,7 +9,9 @@ namespace IngameScript
         public static readonly string UNKNOWN_FUNCTION = "Unknown function {0}";
         public static readonly string MISMATCHED_PAR = "Mismatched or missing parentheses in statement";
         public static readonly string UNEXPECTED_PAR_IN_FUNC = "Unexpected # of parameters for function : {0}";
+        public static readonly string MISSING_PARAMETER_IN_FUNC = "Missing Parameter '{0}' for function '{1}'";
         public static readonly string INVALID_PARAMETER = "Invalid parameter for {0} : {1}";
+        public static readonly string UNEXPECTED_FUNCTION = "Unexpected function for Action: {0} at Line {1}";
 
         // Configuration errors
         public static readonly string BLOCK_NOT_FOUND = "Block not found command {0}";

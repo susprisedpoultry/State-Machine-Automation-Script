@@ -302,6 +302,102 @@ namespace IngameScript
         }
     }
 
+public class SetLightColorAction : IStateAction
+    {
+        private static readonly int TICK_SKIP_COUNT = 6;
+
+        private StateMachine _theMachine;
+        private IMyLightingBlock _theBlock;
+        private Color _targetValue;
+        private Color _startingValue;        
+        private int _delayInTicks;
+        private int _currentTick;
+
+        public SetLightColorAction(StateMachine theMachine, 
+                                string blockName, 
+                                Color targetValue, 
+                                float transitionDuration)
+        {
+            _theMachine = theMachine;
+            _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(blockName) as IMyLightingBlock;
+
+            if (_theBlock == null)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, blockName));
+            }  
+
+            _targetValue = targetValue;
+            _delayInTicks = (int)Math.Ceiling(transitionDuration * 60f);
+            if (_delayInTicks == 0)
+                _delayInTicks = 1;
+        }
+
+        public bool IsDone()
+        {
+            return (_currentTick >= _delayInTicks);
+        }
+
+        public void OnExit() {}
+
+        public void OnEnter()
+        {
+            _startingValue = _theBlock.Color;
+            _currentTick = 0;
+        }
+
+        public void OnTick()
+        {
+            int ticksRemaining = _delayInTicks - (++_currentTick);
+
+            if ( (ticksRemaining >= 0) && ((ticksRemaining % TICK_SKIP_COUNT) == 0))
+            {
+                float progress = (float)_currentTick/(float)_delayInTicks;
+                Color newValue = Color.Lerp(_startingValue, _targetValue, progress);
+
+                _theMachine.stateStatus("Value " +  progress + " => " + newValue);
+
+                _theBlock.Color = newValue;
+            }
+        }
+    }
+
+    public class SetEnabledAction : IStateAction
+    {
+        public static readonly string STATE_ENABLED = "ENABLED";
+        public static readonly string STATE_DISABLED = "DISABLED";
+
+        StateMachine _theMachine;
+        private IMyFunctionalBlock  _theBlock;
+        private bool _desiredState;
+
+        public SetEnabledAction(StateMachine theMachine, 
+                                string blockName, 
+                                string desiredState)
+        {
+            _theMachine = theMachine;
+            _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(blockName) as IMyFunctionalBlock ;  
+
+            if (_theBlock == null)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, blockName));
+            }  
+
+            _desiredState =  (desiredState == STATE_ENABLED);
+        }
+
+        public bool IsDone() { return true; }
+        public void OnExit() {}
+        public void OnTick() {}
+
+        public void OnEnter()
+        {
+            if (_theBlock.Enabled != _desiredState)
+            {
+                _theBlock.Enabled = _desiredState;
+            }
+        }
+    } 
+
     public class LockConnectorAction : IStateAction
     {
         StateMachine _theMachine;
