@@ -65,7 +65,6 @@ namespace IngameScript
 
         override public bool IsMet()
         {
-
             return _theConnector.Status == _targetStatus;
         }         
     }
