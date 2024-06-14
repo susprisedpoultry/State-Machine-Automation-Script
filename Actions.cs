@@ -106,9 +106,6 @@ namespace IngameScript
 
     public class TriggerTimerAction : IStateAction
     {
-        public static readonly string TRIGGER_METHOD_NOW = "NOW";
-        public static readonly string TRIGGER_METHOD_START = "START";
-
         private IMyTimerBlock _attachedTimerBlock;
         private string _triggerMethod;
 
@@ -126,7 +123,7 @@ namespace IngameScript
 
         public void OnEnter()
         {
-            if (_triggerMethod == TRIGGER_METHOD_NOW)
+            if (_triggerMethod == TimerTriggerType.NOW)
             {
                 _attachedTimerBlock.Trigger();
             }
@@ -154,10 +151,6 @@ namespace IngameScript
 
     public class TurnRotorAction : IStateAction
     {
-        public static readonly string ROTOR_DIRECTION_ANY = "ANY";
-        public static readonly string ROTOR_DIRECTION_POSITIVE = "POS";
-        public static readonly string ROTOR_DIRECTION_NEGATIVE = "NEG";
-
         private static readonly float EASE_IN_ANGLE = 5f/ 57.2957795f;
         private static readonly float TARGET_ANGLE = 0.5f/ 57.2957795f;
         private static readonly float EASE_IN_MAX_RPM = 0.5f;
@@ -205,7 +198,7 @@ namespace IngameScript
             float directionMultiplyer = 1f;
 
             // TODO: Look for overflow to get real shortest path
-            if ( (_direction == ROTOR_DIRECTION_NEGATIVE) || (distanceInRAD < 0) )
+            if ( (_direction == RotorDirection.NEGATIVE) || (distanceInRAD < 0) )
             {
                 directionMultiplyer = -1f;
             }
@@ -363,9 +356,6 @@ public class SetLightColorAction : IStateAction
 
     public class SetEnabledAction : IStateAction
     {
-        public static readonly string STATE_ENABLED = "ENABLED";
-        public static readonly string STATE_DISABLED = "DISABLED";
-
         StateMachine _theMachine;
         private IMyFunctionalBlock  _theBlock;
         private bool _desiredState;
@@ -382,7 +372,7 @@ public class SetLightColorAction : IStateAction
                 throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, blockName));
             }  
 
-            _desiredState =  (desiredState == STATE_ENABLED);
+            _desiredState =  (desiredState == EnabledStates.ENABLED);
         }
 
         public bool IsDone() { return true; }
@@ -416,11 +406,11 @@ public class SetLightColorAction : IStateAction
                 throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, connectorName));
             }  
 
-            if (desiredState == ConnectorStateCondition.STATE_LOCKED)
+            if (desiredState == ConnectorStates.LOCKED)
             {
                 _desiredState = MyShipConnectorStatus.Connected;
             }
-            else if (desiredState == ConnectorStateCondition.STATE_UNLOCKED)
+            else if (desiredState == ConnectorStates.UNLOCKED)
             {
                 _desiredState = MyShipConnectorStatus.Unconnected;
             }

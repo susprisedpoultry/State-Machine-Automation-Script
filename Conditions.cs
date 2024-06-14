@@ -31,9 +31,9 @@ namespace IngameScript
 
     public class ConnectorStateCondition : ITransitionCondition 
     {        
-        public static readonly string STATE_LOCKED = "LOCKED";
-        public static readonly string STATE_UNLOCKED = "UNLOCKED";
-        public static readonly string STATE_READY = "READY";
+        //public static readonly string STATE_LOCKED = "LOCKED";
+        //public static readonly string STATE_UNLOCKED = "UNLOCKED";
+        //public static readonly string STATE_READY = "READY";
 
         private IMyShipConnector _theConnector;
         private MyShipConnectorStatus _targetStatus;
@@ -49,11 +49,11 @@ namespace IngameScript
                 throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, connectorName));
             }  
 
-            if (targetStatus == STATE_LOCKED)
+            if (targetStatus == ConnectorStates.LOCKED)
             {
                 _targetStatus = MyShipConnectorStatus.Connected;
             }
-            else if (targetStatus == STATE_UNLOCKED)
+            else if (targetStatus == ConnectorStates.UNLOCKED)
             {
                 _targetStatus = MyShipConnectorStatus.Unconnected;
             }
@@ -71,11 +71,6 @@ namespace IngameScript
 
     public class SensorStateCondition : ITransitionCondition 
     {
-        public static readonly string STATE_DETECTED = "DETECTED";
-        public static readonly string STATE_UNDETECTED = "UNDETECTED";
-
-        //private StateMachine _theMachine;
-
         private IMySensorBlock _theSensor;
         private bool _triggerOnEmpty;
 
@@ -90,7 +85,7 @@ namespace IngameScript
                 throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, sensorName));
             }  
 
-            _triggerOnEmpty = (triggerState == STATE_UNDETECTED);
+            _triggerOnEmpty = (triggerState == SensorStates.UNDETECTED);
         }
 
         public bool IsMet()
