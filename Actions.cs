@@ -332,8 +332,8 @@ namespace IngameScript
 
         // State Info
         private StateMachine _theMachine;
-        private IMyLightingBlock _theBlock;
-        private Color _startingValue;        
+        private IMyLightingBlock[] _theBlocks;
+        private Color[] _startingValue;        
         private int _currentTick;
 
         // Constants
@@ -355,9 +355,26 @@ namespace IngameScript
 
         public void OnBindBlocks(IMyGridTerminalSystem theGrid)
         {
-            _theBlock = theGrid.GetBlockWithName(_blockName) as IMyLightingBlock;
+            IMyBlockGroup group = theGrid.GetBlockGroupWithName(_blockName);
+            List<IMyLightingBlock> lights = new List<IMyLightingBlock>();
 
-            if (_theBlock == null)
+            if (group != null) 
+            {
+                group.GetBlocksOfType<IMyLightingBlock>(lights);                
+            }
+            else
+            {
+                IMyLightingBlock theLight = theGrid.GetBlockWithName(_blockName) as IMyLightingBlock;
+
+                if (theLight != null)
+                {
+                    lights.Add(theLight);
+                }
+            }
+
+            _theBlocks = lights.ToArray();
+
+            if (_theBlocks.Length == 0)
             {
                 throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
             } 
@@ -372,7 +389,8 @@ namespace IngameScript
 
         public void OnEnter()
         {
-            _startingValue = _theBlock.Color;
+            _startingValue = Color[_theBlocks.Length];
+            _startingValue = _theBlocks[].Color;
             _currentTick = 0;
         }
 
