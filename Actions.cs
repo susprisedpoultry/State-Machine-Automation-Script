@@ -295,7 +295,7 @@ namespace IngameScript
         }
     }
 
-public class SetLightColorAction : IStateAction
+    public class SetLightColorAction : IStateAction
     {
         private static readonly int TICK_SKIP_COUNT = 6;
 

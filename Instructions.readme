@@ -1,61 +1,11 @@
 ﻿R e a d m e
 -----------
 
-The configuration of the state machine goes in the CustomData field of the programmable block.
+The configuration of the state machine goes in the CustomData field of the programmable block. 
 
-This is an example that I am using in my game
+Hit recompile to re-load the configuration after a change.
 
-Machine:Parking
-Action:ConnectTerminal(Helm Parking, 0)
-When:Command(Reset)
-ThenGo:RESET
+There is a guide on steam
+https://steamcommunity.com/sharedfiles/filedetails/?id=3267226896
 
-State:UNKNOWN
-
-State:RESET
-When:ConnectorState(Parking Arm Connector, LOCKED)
-ThenGo:ERROR
-Step:
-Action:TriggerTimer(ParkingArmMovingTimerBlock,NOW) # Start the warning lights
-Action:SetAngle(Parking Arm Advanced Rotor,0,2,ANY)
-Step:
-Action:SetPosition(Parking FB Piston,0,1)
-Action:SetPosition(Parking LR Piston,0,1)
-Go:STOWED
-
-State:STOWED
-Action:TriggerTimer(ParkingArmStoppedTimerBlock, NOW)
-When:Command(Park)
-ThenGo:PARKING
-
-State:PARKING
-Step:
-Action:TriggerTimer(ParkingArmMovingTimerBlock,NOW) #
-Action:SetAngle(Parking Arm Advanced Rotor,270,2,NEG)
-Step:
-Action:SetPosition(Parking LR Piston,3.5,2)
-Step:
-Action:SetPosition(Parking FB Piston,10,0.5)
-When:ConnectorState(Parking Arm Connector, READY)
-ThenGo:PARKING.Capture
-Go:ERROR
-Step:PARKING.Capture
-Action:LockConnector(Parking Arm Connector, LOCKED)
-Step:
-Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,-0.11,2) # Lift vehicle using rotor displacement
-Step:
-Action:SetAngle(Parking Arm Advanced Rotor,90,2,ANY)
-Step:
-Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,0.11,2)
-Go:PARKED
-
-State:PARKED
-Action:TriggerTimer(ParkingArmStoppedTimerBlock,NOW) #
-When:Command(Park)
-ThenGo:PARKING
-When:ConnectorState(Parking Arm Connector, UNLOCKED)
-And:SensorState(Parking Occupied Sensor, NOT_DETECTED)
-ThenGo:RESET
-
-State:ERROR
 

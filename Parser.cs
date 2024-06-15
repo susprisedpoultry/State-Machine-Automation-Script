@@ -426,8 +426,6 @@ namespace IngameScript
                 string[] tokenizedString = Parser.Tokenize(functionToParse);
 
                 _function = Parser.ParseFunction(tokenizedString);
-
-                // TODO: Validate parameter count?
             }
 
             public override string ToString()

@@ -365,7 +365,11 @@ namespace IngameScript
                     }               
                 }  
 
-                // TODO: What if we have Conditions open
+                // Check if we have Conditions open when the state closes
+                if ( (activeCondition != null) || (activeWhenCommand == null) )
+                {
+                    throw new Exception(Messages.WHEN_NOT_CLOSED);
+                }
 
                 // Close any state left open
                 CloseState(ref parentState, ref currentState);
