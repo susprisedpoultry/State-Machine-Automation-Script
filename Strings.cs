@@ -12,7 +12,7 @@ namespace IngameScript
 
         // Configuration errors
 
-        public static readonly string WHEN_NOT_CLOSED = "When: command missing the ThenGo: statment";
+        public static readonly string WHEN_NOT_CLOSED = "When: command missing ThenGo: {0}";
         public static readonly string BLOCK_NOT_FOUND = "Block not found command {0}";
         public static readonly string SCREEN_NOT_FOUND = "Unable to get screen #{0} from block {1}";
         public static readonly string STATE_NOT_FOUND = "Can't Transition to '{0}' state not found";

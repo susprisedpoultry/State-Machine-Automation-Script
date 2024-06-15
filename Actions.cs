@@ -32,31 +32,40 @@ namespace IngameScript
 
     public class SetPositionAction : IStateAction
     {
-        private StateMachine _theMachine;
-        private IMyPistonBase _attachedPiston;
+        // Configuration
+        private string _blockName;
         private float _maxVelocity;
         private float _targetPosition;
         private bool _isOnTarget;
 
+        // State Info
+        private StateMachine _theMachine;
+        private IMyPistonBase _attachedPiston = null;
+
+        // Constants
         private static readonly float EASE_IN_DISTANCE = 0.2f;
         private static readonly float ON_TARGET_DISTANCE = 0.01f;
         private static readonly float EASE_IN_VELOCITY = 0.5f;
 
         public SetPositionAction(StateMachine theMachine, 
-                                 string pistonName, 
+                                 string blockName, 
                                  float targetPosition,
                                  float maxVelocity)
         {
             _theMachine = theMachine;
-            _attachedPiston = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(pistonName) as IMyPistonBase;  
+            _blockName = blockName;
+            _maxVelocity = Math.Abs(maxVelocity);
+            _targetPosition = targetPosition;
+        }
+
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _attachedPiston = theGrid.GetBlockWithName(_blockName) as IMyPistonBase;  
 
             if (_attachedPiston == null)
             {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, pistonName));
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
             }  
-
-            _maxVelocity = Math.Abs(maxVelocity);
-            _targetPosition = targetPosition;
         }
 
         public bool IsDone()
@@ -106,19 +115,28 @@ namespace IngameScript
 
     public class TriggerTimerAction : IStateAction
     {
-        private IMyTimerBlock _attachedTimerBlock;
+        // Configuration
+        private string _blockName;
         private string _triggerMethod;
 
-        public TriggerTimerAction(StateMachine theMachine, string timerBlockName, string triggerMethod)
+        // State Info
+        private IMyTimerBlock _attachedTimerBlock = null;
+
+
+        public TriggerTimerAction(StateMachine theMachine, string blockName, string triggerMethod)
         {
-            _attachedTimerBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(timerBlockName) as IMyTimerBlock;  
+            _blockName = blockName;
+            _triggerMethod = triggerMethod;
+        }
+
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _attachedTimerBlock = theGrid.GetBlockWithName(_blockName) as IMyTimerBlock;  
 
             if (_attachedTimerBlock == null)
             {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, timerBlockName));
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
             }  
-
-            _triggerMethod = triggerMethod;
         }
 
         public void OnEnter()
@@ -133,52 +151,51 @@ namespace IngameScript
             }
         }
 
-        public void OnExit()
-        {
+        public void OnExit() { }
 
-        }
+        public void OnTick() { }
 
-        public void OnTick()
-        {
-            
-        }
-
-        public bool IsDone()
-        {
-            return true;
-        }
+        public bool IsDone() { return true; }
     } 
 
     public class TurnRotorAction : IStateAction
     {
+        // Configuration
+        private string _blockName;
+        private float _maxRPM;
+        private float _targetAngle;
+        private string _direction;
+
+        // State Info
+        private IMyMotorStator _attachedRotor; 
+        private bool _isOnTarget;
+
+        // Constants
         private static readonly float EASE_IN_ANGLE = 5f/ 57.2957795f;
         private static readonly float TARGET_ANGLE = 0.5f/ 57.2957795f;
         private static readonly float EASE_IN_MAX_RPM = 0.5f;
 
-        private IMyMotorStator _attachedRotor; 
-        private float _maxRPM;
-        private float _targetAngle;
-        private string _direction;
-        //private float _maxRPMWithDirection;
-        private bool _isOnTarget;
 
         public TurnRotorAction(StateMachine theMachine, 
-                               string rotorName, 
+                               string blockName, 
                                float targetAngle, 
                                float maxRPM,
                                string direction)
         {
-            _attachedRotor = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(rotorName) as IMyMotorStator;
-
-            if (_attachedRotor == null)
-            {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, rotorName));
-            }  
-
+            _blockName = blockName;
             _maxRPM = Math.Abs(maxRPM);
             _targetAngle = targetAngle;
             _direction = direction;
-            _isOnTarget = false;
+        }
+
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _attachedRotor = theGrid.GetBlockWithName(_blockName) as IMyMotorStator;  
+
+            if (_attachedRotor == null)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            }  
         }
 
         public bool IsDone()
@@ -230,15 +247,21 @@ namespace IngameScript
 
     public class SetValueFloatAction : IStateAction
     {
-        private static readonly int TICK_SKIP_COUNT = 6;
-
-        private StateMachine _theMachine;
-        private IMyTerminalBlock _theBlock;
+        // Configuration
+        private string _blockName;
         private string _propertyName;
         private float _targetValue;
-        private float _startingValue;        
         private int _delayInTicks;
+
+        // State Info
+        private StateMachine _theMachine;
+        private IMyTerminalBlock _theBlock;
+        private float _startingValue;        
         private int _currentTick;
+
+        // Constants
+        private static readonly int TICK_SKIP_COUNT = 6;
+
 
         public SetValueFloatAction(StateMachine theMachine, 
                                 string blockName, 
@@ -247,23 +270,28 @@ namespace IngameScript
                                 float transitionDuration)
         {
             _theMachine = theMachine;
-            _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(blockName) as IMyTerminalBlock;
 
-            if (_theBlock == null)
-            {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, blockName));
-            }  
-
-            if (_theBlock.GetProperty(propertyName) == null)
-            {
-                throw new Exception(String.Format(Messages.PROP_NOT_FOUND, propertyName, blockName));
-            }
-
+            _blockName = blockName;
             _propertyName = propertyName;
             _targetValue = targetValue;
             _delayInTicks = (int)Math.Ceiling(transitionDuration * 60f);
             if (_delayInTicks == 0)
                 _delayInTicks = 1;
+        }
+
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _theBlock = theGrid.GetBlockWithName(_blockName) as IMyTerminalBlock;
+
+            if (_theBlock == null)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            }  
+
+            if (_theBlock.GetProperty(_propertyName) == null)
+            {
+                throw new Exception(String.Format(Messages.PROP_NOT_FOUND, _propertyName, _blockName));
+            }
         }
 
         public bool IsDone()
@@ -297,14 +325,19 @@ namespace IngameScript
 
     public class SetLightColorAction : IStateAction
     {
-        private static readonly int TICK_SKIP_COUNT = 6;
+        // Configuration
+        private string _blockName;
+        private Color _targetValue;
+        private int _delayInTicks;
 
+        // State Info
         private StateMachine _theMachine;
         private IMyLightingBlock _theBlock;
-        private Color _targetValue;
         private Color _startingValue;        
-        private int _delayInTicks;
         private int _currentTick;
+
+        // Constants
+        private static readonly int TICK_SKIP_COUNT = 6;
 
         public SetLightColorAction(StateMachine theMachine, 
                                 string blockName, 
@@ -312,17 +345,22 @@ namespace IngameScript
                                 float transitionDuration)
         {
             _theMachine = theMachine;
-            _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(blockName) as IMyLightingBlock;
+            _blockName = blockName;
+            _targetValue = targetValue;
+            _delayInTicks = (int)Math.Ceiling(transitionDuration * 60f);
+
+            if (_delayInTicks == 0)
+                _delayInTicks = 1;
+        }
+
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _theBlock = theGrid.GetBlockWithName(_blockName) as IMyLightingBlock;
 
             if (_theBlock == null)
             {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, blockName));
-            }  
-
-            _targetValue = targetValue;
-            _delayInTicks = (int)Math.Ceiling(transitionDuration * 60f);
-            if (_delayInTicks == 0)
-                _delayInTicks = 1;
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            } 
         }
 
         public bool IsDone()
@@ -356,23 +394,31 @@ namespace IngameScript
 
     public class SetEnabledAction : IStateAction
     {
-        StateMachine _theMachine;
-        private IMyFunctionalBlock  _theBlock;
+        // Configuration
+        private string _blockName;
         private bool _desiredState;
+
+        // State Info
+        private StateMachine _theMachine;
+        private IMyFunctionalBlock _theBlock;
 
         public SetEnabledAction(StateMachine theMachine, 
                                 string blockName, 
                                 string desiredState)
         {
             _theMachine = theMachine;
-            _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(blockName) as IMyFunctionalBlock ;  
+            _blockName = blockName;
+            _desiredState =  (desiredState == EnabledStates.ENABLED);
+        }
+
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _theBlock = theGrid.GetBlockWithName(_blockName) as IMyLightingBlock;
 
             if (_theBlock == null)
             {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, blockName));
-            }  
-
-            _desiredState =  (desiredState == EnabledStates.ENABLED);
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            } 
         }
 
         public bool IsDone() { return true; }
@@ -390,21 +436,21 @@ namespace IngameScript
 
     public class LockConnectorAction : IStateAction
     {
-        StateMachine _theMachine;
-        private IMyShipConnector _theConnector;
+        // Configuration
+        private string _blockName;
         private MyShipConnectorStatus _desiredState;
+        
+        // State Info
+        private StateMachine _theMachine;
+        private IMyShipConnector _theConnector;
+
 
         public LockConnectorAction(StateMachine theMachine, 
-                                string connectorName, 
+                                string blockName, 
                                 string desiredState)
         {
             _theMachine = theMachine;
-            _theConnector = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(connectorName) as IMyShipConnector;  
-
-            if (_theConnector == null)
-            {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, connectorName));
-            }  
+            _blockName = blockName;
 
             if (desiredState == ConnectorStates.LOCKED)
             {
@@ -418,6 +464,16 @@ namespace IngameScript
             {
                 throw new Exception(String.Format(Messages.INVALID_PARAMETER, "desiredState", desiredState));
             }
+        }
+
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _theConnector = theGrid.GetBlockWithName(_blockName) as IMyShipConnector;  
+
+            if (_theConnector == null)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            }  
         }
 
         public bool IsDone()

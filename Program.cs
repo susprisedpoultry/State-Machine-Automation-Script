@@ -216,11 +216,13 @@ namespace IngameScript
                     {
                         Parser.SimpleCommand stateCommand = command as Parser.SimpleCommand;
 
+                        ChecksBeforeStateClose(activeCondition, activeWhenCommand);
+
                         CloseState(ref parentState, ref currentState);
                         substateCount = 0;
                         currentState = new State(_parkingStateMachine, stateCommand.Parameter);
 
-                        if (firstStateName== null)
+                        if (firstStateName == null)
                         {
                             firstStateName = currentState.Name;
                         }
@@ -246,6 +248,9 @@ namespace IngameScript
                         }
                         else
                         {
+
+                            ChecksBeforeStateClose(activeCondition, activeWhenCommand);
+
                             CloseSubState(ref parentState, ref currentState);
                             substateCount++;
                         }
@@ -365,13 +370,8 @@ namespace IngameScript
                     }               
                 }  
 
-                // Check if we have Conditions open when the state closes
-                if ( (activeCondition != null) || (activeWhenCommand == null) )
-                {
-                    throw new Exception(Messages.WHEN_NOT_CLOSED);
-                }
-
                 // Close any state left open
+                ChecksBeforeStateClose(activeCondition, activeWhenCommand);
                 CloseState(ref parentState, ref currentState);
                 
                 // We're done, do we have a state machine?
@@ -397,6 +397,20 @@ namespace IngameScript
                 _parkingStateMachine = null;
             }
             
+        }
+
+        private static void ChecksBeforeStateClose(ITransitionCondition activeCondition, Parser.FunctionCommand activeWhenCommand)
+        {
+            // Check if we have Conditions open when the state closes
+            if (activeCondition != null)
+            {
+                throw new Exception(String.Format(Messages.WHEN_NOT_CLOSED, activeCondition.GetType().ToString()));
+            }
+            
+            if (activeWhenCommand != null)
+            {
+                throw new Exception(String.Format(Messages.WHEN_NOT_CLOSED, activeWhenCommand.Function.ToString()));
+            }
         }
 
         public void Save()

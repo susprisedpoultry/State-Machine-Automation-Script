@@ -31,23 +31,18 @@ namespace IngameScript
 
     public class ConnectorStateCondition : ITransitionCondition 
     {        
-        //public static readonly string STATE_LOCKED = "LOCKED";
-        //public static readonly string STATE_UNLOCKED = "UNLOCKED";
-        //public static readonly string STATE_READY = "READY";
-
-        private IMyShipConnector _theConnector;
+        // Configuration
+        private string _blockName;
         private MyShipConnectorStatus _targetStatus;
+
+        // State data
+        private IMyShipConnector _theConnector;
 
         public ConnectorStateCondition(StateMachine theMachine, 
                                     string connectorName, 
                                     string targetStatus)
         {
-            _theConnector = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(connectorName) as IMyShipConnector;
-
-            if (_theConnector == null)
-            {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, connectorName));
-            }  
+            _blockName = connectorName;
 
             if (targetStatus == ConnectorStates.LOCKED)
             {
@@ -63,6 +58,15 @@ namespace IngameScript
             }            
         }
 
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _theConnector = theGrid.GetBlockWithName(_blockName) as IMyShipConnector;
+
+            if (_theConnector == null)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            }  
+        }
         public bool IsMet()
         {
             return _theConnector.Status == _targetStatus;
@@ -71,21 +75,29 @@ namespace IngameScript
 
     public class SensorStateCondition : ITransitionCondition 
     {
-        private IMySensorBlock _theSensor;
+        // Configuration
+        private string _blockName;        
         private bool _triggerOnEmpty;
+
+        // State data
+        private IMySensorBlock _theSensor;
 
         public SensorStateCondition(StateMachine theMachine, 
                                     string sensorName, 
                                     string triggerState)
         {
-            _theSensor = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(sensorName) as IMySensorBlock;
+            _blockName = sensorName;
+            _triggerOnEmpty = (triggerState == SensorStates.UNDETECTED);
+        }
+
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        {
+            _theSensor = theGrid.GetBlockWithName(_blockName) as IMySensorBlock;
 
             if (_theSensor == null)
             {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, sensorName));
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
             }  
-
-            _triggerOnEmpty = (triggerState == SensorStates.UNDETECTED);
         }
 
         public bool IsMet()

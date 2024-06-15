@@ -225,6 +225,7 @@ namespace IngameScript
     public interface IStateAction
     {
         bool IsDone();
+        void OnBindBlocks(IMyGridTerminalSystem theGrid);
         void OnEnter();
         void OnExit();        
         void OnTick();
@@ -232,6 +233,7 @@ namespace IngameScript
 
     public interface ITransitionCondition
     {
+        void OnBindBlocks(IMyGridTerminalSystem theGrid);
         bool IsMet();
     }
 
@@ -249,10 +251,10 @@ namespace IngameScript
             _condition2 = condition2;
         }
 
+        public void OnBindBlocks(IMyGridTerminalSystem theGrid) {}
+
         public bool IsMet()
         {
-            _theMachine.stateStatus("Condition " + _condition1.IsMet() + ", " + _condition2.IsMet());
-            //return false;
             return _condition1.IsMet() && _condition2.IsMet();
         } 
     }
@@ -291,6 +293,18 @@ namespace IngameScript
 
         virtual public void OnEnter()
         {
+            // Rebind the blocks on the actions and conditions
+            // TODO: decide what to do with the exceptions.
+            foreach(IStateAction action in _actions)
+            {
+                action.OnBindBlocks(_machine.TheProgram.GridTerminalSystem);
+            }              
+
+            foreach(TransitionWithCondition transition in _conditions)
+            {
+                transition.Condition.OnBindBlocks(_machine.TheProgram.GridTerminalSystem);
+            }
+
             foreach(IStateAction action in _actions)
             {
                 action.OnEnter();
