@@ -220,6 +220,33 @@ namespace IngameScript
                 }
             }
         }
+
+        public T[] FindBlockOrGroupbyName<T>(string name) where T : class, IMyTerminalBlock
+        {
+            IMyBlockGroup group = this._theProgram.GridTerminalSystem.GetBlockGroupWithName(name);
+            List<T> lights = new List<T>();
+
+            if (group != null) 
+            {
+                group.GetBlocksOfType<T>(lights);                
+            }
+            else
+            {
+                T theLight =  this._theProgram.GridTerminalSystem.GetBlockWithName(name) as T;
+
+                if (theLight != null)
+                {
+                    lights.Add(theLight);
+                }
+            }
+
+            if (lights.Count == 0)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, name));
+            }      
+            return lights.ToArray();    
+        }
+    
     }
 
     public interface IStateAction

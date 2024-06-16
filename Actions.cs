@@ -355,29 +355,7 @@ namespace IngameScript
 
         public void OnBindBlocks(IMyGridTerminalSystem theGrid)
         {
-            IMyBlockGroup group = theGrid.GetBlockGroupWithName(_blockName);
-            List<IMyLightingBlock> lights = new List<IMyLightingBlock>();
-
-            if (group != null) 
-            {
-                group.GetBlocksOfType<IMyLightingBlock>(lights);                
-            }
-            else
-            {
-                IMyLightingBlock theLight = theGrid.GetBlockWithName(_blockName) as IMyLightingBlock;
-
-                if (theLight != null)
-                {
-                    lights.Add(theLight);
-                }
-            }
-
-            _theBlocks = lights.ToArray();
-
-            if (_theBlocks.Length == 0)
-            {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
-            } 
+            _theBlocks = _theMachine.FindBlockOrGroupbyName<IMyLightingBlock>(_blockName);     
         }
 
         public bool IsDone()
@@ -389,8 +367,11 @@ namespace IngameScript
 
         public void OnEnter()
         {
-            _startingValue = Color[_theBlocks.Length];
-            _startingValue = _theBlocks[].Color;
+            _startingValue = new Color[_theBlocks.Length];
+            for (int i=0;i<_theBlocks.Length;i++)
+            {
+                _startingValue[i] = _theBlocks[i].Color;
+            }
             _currentTick = 0;
         }
 
@@ -401,11 +382,13 @@ namespace IngameScript
             if ( (ticksRemaining >= 0) && ((ticksRemaining % TICK_SKIP_COUNT) == 0))
             {
                 float progress = (float)_currentTick/(float)_delayInTicks;
-                Color newValue = Color.Lerp(_startingValue, _targetValue, progress);
 
-                _theMachine.stateStatus("Value " +  progress + " => " + newValue);
+                for (int i=0;i<_theBlocks.Length;i++)
+                {
+                    Color newValue = Color.Lerp(_startingValue[i], _targetValue, progress);
 
-                _theBlock.Color = newValue;
+                    _theBlocks[i].Color = newValue;
+                }
             }
         }
     }
@@ -418,7 +401,7 @@ namespace IngameScript
 
         // State Info
         private StateMachine _theMachine;
-        private IMyFunctionalBlock _theBlock;
+        private IMyFunctionalBlock[] _theBlocks;
 
         public SetEnabledAction(StateMachine theMachine, 
                                 string blockName, 
@@ -431,12 +414,7 @@ namespace IngameScript
 
         public void OnBindBlocks(IMyGridTerminalSystem theGrid)
         {
-            _theBlock = theGrid.GetBlockWithName(_blockName) as IMyLightingBlock;
-
-            if (_theBlock == null)
-            {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
-            } 
+            _theBlocks = _theMachine.FindBlockOrGroupbyName<IMyFunctionalBlock>(_blockName);
         }
 
         public bool IsDone() { return true; }
@@ -445,9 +423,12 @@ namespace IngameScript
 
         public void OnEnter()
         {
-            if (_theBlock.Enabled != _desiredState)
+            for (int i=0;i<_theBlocks.Length;i++)
             {
-                _theBlock.Enabled = _desiredState;
+                if (_theBlocks[i].Enabled != _desiredState)
+                {
+                    _theBlocks[i].Enabled = _desiredState;
+                }
             }
         }
     } 
