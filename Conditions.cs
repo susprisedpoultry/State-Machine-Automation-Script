@@ -38,8 +38,7 @@ namespace IngameScript
         // State data
         private IMyShipConnector _theConnector;
 
-        public ConnectorStateCondition(StateMachine theMachine, 
-                                    string connectorName, 
+        public ConnectorStateCondition(string connectorName, 
                                     string targetStatus)
         {
             _blockName = connectorName;
@@ -58,9 +57,9 @@ namespace IngameScript
             }            
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
-            _theConnector = theGrid.GetBlockWithName(_blockName) as IMyShipConnector;
+            _theConnector = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyShipConnector;
 
             if (_theConnector == null)
             {
@@ -82,17 +81,16 @@ namespace IngameScript
         // State data
         private IMySensorBlock _theSensor;
 
-        public SensorStateCondition(StateMachine theMachine, 
-                                    string sensorName, 
+        public SensorStateCondition(string sensorName, 
                                     string triggerState)
         {
             _blockName = sensorName;
             _triggerOnEmpty = (triggerState == SensorStates.UNDETECTED);
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
-            _theSensor = theGrid.GetBlockWithName(_blockName) as IMySensorBlock;
+            _theSensor = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMySensorBlock;
 
             if (_theSensor == null)
             {

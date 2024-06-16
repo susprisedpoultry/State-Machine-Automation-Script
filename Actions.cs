@@ -47,20 +47,19 @@ namespace IngameScript
         private static readonly float ON_TARGET_DISTANCE = 0.01f;
         private static readonly float EASE_IN_VELOCITY = 0.5f;
 
-        public SetPositionAction(StateMachine theMachine, 
-                                 string blockName, 
+        public SetPositionAction(string blockName, 
                                  float targetPosition,
                                  float maxVelocity)
         {
-            _theMachine = theMachine;
             _blockName = blockName;
             _maxVelocity = Math.Abs(maxVelocity);
             _targetPosition = targetPosition;
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
-            _attachedPiston = theGrid.GetBlockWithName(_blockName) as IMyPistonBase;  
+            _theMachine = theMachine;
+            _attachedPiston = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyPistonBase;  
 
             if (_attachedPiston == null)
             {
@@ -123,15 +122,15 @@ namespace IngameScript
         private IMyTimerBlock _attachedTimerBlock = null;
 
 
-        public TriggerTimerAction(StateMachine theMachine, string blockName, string triggerMethod)
+        public TriggerTimerAction(string blockName, string triggerMethod)
         {
             _blockName = blockName;
             _triggerMethod = triggerMethod;
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
-            _attachedTimerBlock = theGrid.GetBlockWithName(_blockName) as IMyTimerBlock;  
+            _attachedTimerBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyTimerBlock;  
 
             if (_attachedTimerBlock == null)
             {
@@ -176,8 +175,7 @@ namespace IngameScript
         private static readonly float EASE_IN_MAX_RPM = 0.5f;
 
 
-        public TurnRotorAction(StateMachine theMachine, 
-                               string blockName, 
+        public TurnRotorAction(string blockName, 
                                float targetAngle, 
                                float maxRPM,
                                string direction)
@@ -188,9 +186,9 @@ namespace IngameScript
             _direction = direction;
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
-            _attachedRotor = theGrid.GetBlockWithName(_blockName) as IMyMotorStator;  
+            _attachedRotor = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyMotorStator;  
 
             if (_attachedRotor == null)
             {
@@ -263,14 +261,11 @@ namespace IngameScript
         private static readonly int TICK_SKIP_COUNT = 6;
 
 
-        public SetValueFloatAction(StateMachine theMachine, 
-                                string blockName, 
+        public SetValueFloatAction(string blockName, 
                                 string propertyName, 
                                 float targetValue, 
                                 float transitionDuration)
         {
-            _theMachine = theMachine;
-
             _blockName = blockName;
             _propertyName = propertyName;
             _targetValue = targetValue;
@@ -279,9 +274,10 @@ namespace IngameScript
                 _delayInTicks = 1;
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
-            _theBlock = theGrid.GetBlockWithName(_blockName) as IMyTerminalBlock;
+            _theMachine = theMachine;
+            _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyTerminalBlock;
 
             if (_theBlock == null)
             {
@@ -339,12 +335,10 @@ namespace IngameScript
         // Constants
         private static readonly int TICK_SKIP_COUNT = 6;
 
-        public SetLightColorAction(StateMachine theMachine, 
-                                string blockName, 
+        public SetLightColorAction(string blockName, 
                                 Color targetValue, 
                                 float transitionDuration)
         {
-            _theMachine = theMachine;
             _blockName = blockName;
             _targetValue = targetValue;
             _delayInTicks = (int)Math.Ceiling(transitionDuration * 60f);
@@ -353,8 +347,9 @@ namespace IngameScript
                 _delayInTicks = 1;
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
+            _theMachine = theMachine;
             _theBlocks = _theMachine.FindBlockOrGroupbyName<IMyLightingBlock>(_blockName);     
         }
 
@@ -403,17 +398,16 @@ namespace IngameScript
         private StateMachine _theMachine;
         private IMyFunctionalBlock[] _theBlocks;
 
-        public SetEnabledAction(StateMachine theMachine, 
-                                string blockName, 
+        public SetEnabledAction(string blockName, 
                                 string desiredState)
         {
-            _theMachine = theMachine;
             _blockName = blockName;
             _desiredState =  (desiredState == EnabledStates.ENABLED);
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
+            _theMachine = theMachine;
             _theBlocks = _theMachine.FindBlockOrGroupbyName<IMyFunctionalBlock>(_blockName);
         }
 
@@ -444,11 +438,9 @@ namespace IngameScript
         private IMyShipConnector _theConnector;
 
 
-        public LockConnectorAction(StateMachine theMachine, 
-                                string blockName, 
-                                string desiredState)
+        public LockConnectorAction(string blockName, 
+                                   string desiredState)
         {
-            _theMachine = theMachine;
             _blockName = blockName;
 
             if (desiredState == ConnectorStates.LOCKED)
@@ -465,9 +457,10 @@ namespace IngameScript
             }
         }
 
-        public void OnBindBlocks(IMyGridTerminalSystem theGrid)
+        public void OnBindBlocks(StateMachine theMachine)
         {
-            _theConnector = theGrid.GetBlockWithName(_blockName) as IMyShipConnector;  
+            _theMachine = theMachine;
+            _theConnector = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyShipConnector;  
 
             if (_theConnector == null)
             {
@@ -477,7 +470,6 @@ namespace IngameScript
 
         public bool IsDone()
         {
-            _theMachine.stateStatus("C " + _theConnector.Status.ToString());
             return _theConnector.Status == _desiredState;
         }
 

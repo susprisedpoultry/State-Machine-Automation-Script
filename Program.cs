@@ -75,14 +75,12 @@ namespace IngameScript
         {
             if (whenCommand.Function.IsFunctionMatch(Functions.CONNECTORSTATE, 2))
             {
-                return new ConnectorStateCondition(_parkingStateMachine,
-                                                    whenCommand.Function.GetStringParam(0, "blockName"),
-                                                    whenCommand.Function.GetValidatedStringParam(1, "blockName", Parser.CONNECTOR_STATES));
+                return new ConnectorStateCondition(whenCommand.Function.GetStringParam(0, "blockName"),
+                                                   whenCommand.Function.GetValidatedStringParam(1, "blockName", Parser.CONNECTOR_STATES));
             }
             else if (whenCommand.Function.IsFunctionMatch(Functions.SENSORORSTATE, 2))
             {
-                return new SensorStateCondition(_parkingStateMachine,
-                                                whenCommand.Function.GetStringParam(0, "blockName"),
+                return new SensorStateCondition(whenCommand.Function.GetStringParam(0, "blockName"),
                                                 whenCommand.Function.GetValidatedStringParam(1, "blockName", Parser.SENSOR_STATES));
             }
             else
@@ -190,7 +188,7 @@ namespace IngameScript
                         {
                             Parser.FunctionCommand andCommand = command as Parser.FunctionCommand;
 
-                            activeCondition = new TransitionAndCondition(_parkingStateMachine, activeCondition, ParseCondition(andCommand));
+                            activeCondition = new TransitionAndCondition(activeCondition, ParseCondition(andCommand));
                             continue;
                         }
                         
@@ -310,51 +308,44 @@ namespace IngameScript
 
                         if (actionCommand.Function.IsFunctionMatch(Functions.SETANGLE, 4)) 
                         {
-                            currentState.AddAction(new TurnRotorAction(_parkingStateMachine, 
-                                                                       actionCommand.Function.GetStringParam(0, "blockName"),
+                            currentState.AddAction(new TurnRotorAction(actionCommand.Function.GetStringParam(0, "blockName"),
                                                                        actionCommand.Function.GetFloatParam(1, "targetAngle"),
                                                                        actionCommand.Function.GetFloatParam(2, "maxRPM"),
                                                                        actionCommand.Function.GetValidatedStringParam(3, "direction", Parser.ROTOR_DIRECTION_CUE)));
                         }
                         else if (actionCommand.Function.IsFunctionMatch(Functions.SETPOSITION, 3)) 
                         {
-                            currentState.AddAction(new SetPositionAction(_parkingStateMachine, 
-                                                                         actionCommand.Function.GetStringParam(0, "blockName"),
+                            currentState.AddAction(new SetPositionAction(actionCommand.Function.GetStringParam(0, "blockName"),
                                                                          actionCommand.Function.GetFloatParam(1, "targetPosition"),
                                                                          actionCommand.Function.GetFloatParam(2, "maxVelocity")));
                         }
                         else if (actionCommand.Function.IsFunctionMatch(Functions.SETVALUEFLOAT, 4))
                         {
-                            currentState.AddAction(new SetValueFloatAction(_parkingStateMachine, 
-                                                                         actionCommand.Function.GetStringParam(0, "blockName"),
+                            currentState.AddAction(new SetValueFloatAction(actionCommand.Function.GetStringParam(0, "blockName"),
                                                                          actionCommand.Function.GetStringParam(1, "property"),
                                                                          actionCommand.Function.GetFloatParam(2, "targetValue"),
                                                                          actionCommand.Function.GetFloatParam(3, "delay")));
                         }
                         else if (actionCommand.Function.IsFunctionMatch(Functions.TRIGGERTIMER, 2)) 
                         {
-                            currentState.AddAction(new TriggerTimerAction(_parkingStateMachine, 
-                                                                       actionCommand.Function.GetStringParam(0, "blockName"),
+                            currentState.AddAction(new TriggerTimerAction(actionCommand.Function.GetStringParam(0, "blockName"),
                                                                        actionCommand.Function.GetValidatedStringParam(1, "timerStartType", Parser.TIMER_TRIGER_TYPE)));
                         }
                         else if (actionCommand.Function.IsFunctionMatch(Functions.LOCKCONNECTOR, 2)) 
                         {
-                            currentState.AddAction(new LockConnectorAction(_parkingStateMachine, 
-                                                                       actionCommand.Function.GetStringParam(0, "blockName"),
+                            currentState.AddAction(new LockConnectorAction(actionCommand.Function.GetStringParam(0, "blockName"),
                                                                        actionCommand.Function.GetValidatedStringParam(1, "timerStartType", Parser.CONNECTOR_STATES)));
                         }
                         else if (actionCommand.Function.IsFunctionMatch(Functions.SETENABLED, 2)) 
                         {
-                            currentState.AddAction(new SetEnabledAction(_parkingStateMachine, 
-                                                                       actionCommand.Function.GetStringParam(0, "blockName"),
+                            currentState.AddAction(new SetEnabledAction(actionCommand.Function.GetStringParam(0, "blockName"),
                                                                        actionCommand.Function.GetValidatedStringParam(1, "desiredState", Parser.ENABLED_STATES)));
                         }
                         else if (actionCommand.Function.IsFunctionMatch(Functions.SETLIGHTCOLOR, 3))
                         {
                             Parser.Color color = actionCommand.Function.GetColorParam(1, "targetValue");
 
-                            currentState.AddAction(new SetLightColorAction(_parkingStateMachine, 
-                                                                           actionCommand.Function.GetStringParam(0, "blockName"),
+                            currentState.AddAction(new SetLightColorAction(actionCommand.Function.GetStringParam(0, "blockName"),
                                                                            new Color(color.Red, color.Green, color.Blue),
                                                                            actionCommand.Function.GetFloatParam(2, "transitionDuration")));
                         }
