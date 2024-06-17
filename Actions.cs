@@ -350,7 +350,13 @@ namespace IngameScript
         public void OnBindBlocks(StateMachine theMachine)
         {
             _theMachine = theMachine;
-            _theBlocks = _theMachine.FindBlockOrGroupbyName<IMyLightingBlock>(_blockName);     
+            _theBlocks = Array.ConvertAll<IMyTerminalBlock, IMyLightingBlock>(_theMachine.FindBlockOrGroupbyName(_blockName), item => item as IMyLightingBlock);
+            _theBlocks = Array.FindAll<IMyLightingBlock>(_theBlocks, block => block != null);
+
+            if (_theBlocks.Length == 0)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            } 
         }
 
         public bool IsDone()
@@ -408,7 +414,13 @@ namespace IngameScript
         public void OnBindBlocks(StateMachine theMachine)
         {
             _theMachine = theMachine;
-            _theBlocks = _theMachine.FindBlockOrGroupbyName<IMyFunctionalBlock>(_blockName);
+            _theBlocks = Array.ConvertAll<IMyTerminalBlock, IMyFunctionalBlock>(_theMachine.FindBlockOrGroupbyName(_blockName), item => item as IMyFunctionalBlock);
+            _theBlocks = Array.FindAll<IMyFunctionalBlock>(_theBlocks, block => block != null);
+
+            if (_theBlocks.Length == 0)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            }                  
         }
 
         public bool IsDone() { return true; }

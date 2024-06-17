@@ -117,6 +117,20 @@ namespace IngameScript
             _conditions.Add(new TransitionWithCondition(condition, targetState));
         }        
 
+        public void Start()
+        {
+            // Todo handle not binding in the configuration
+            foreach(State state in _states.Values)
+            {
+                state.OnBindBlocks(this);
+            }
+        }
+
+        public void Halt()
+        {
+
+        }
+
         public void logError(string error)
         {
             _theProgram.Echo("ERROR: " + error);
@@ -221,18 +235,19 @@ namespace IngameScript
             }
         }
 
-        public T[] FindBlockOrGroupbyName<T>(string name) where T : class, IMyTerminalBlock
+        public IMyTerminalBlock[] FindBlockOrGroupbyName(string name)
         {
             IMyBlockGroup group = this._theProgram.GridTerminalSystem.GetBlockGroupWithName(name);
-            List<T> lights = new List<T>();
+            List<IMyTerminalBlock> lights = new List<IMyTerminalBlock>();
 
             if (group != null) 
             {
-                group.GetBlocksOfType<T>(lights);                
+                //group.GetBlocksOfType<T>(lights);      
+                group.GetBlocks(lights);
             }
             else
             {
-                T theLight =  this._theProgram.GridTerminalSystem.GetBlockWithName(name) as T;
+                IMyTerminalBlock theLight =  this._theProgram.GridTerminalSystem.GetBlockWithName(name);
 
                 if (theLight != null)
                 {
@@ -240,11 +255,7 @@ namespace IngameScript
                 }
             }
 
-            if (lights.Count == 0)
-            {
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, name));
-            }      
-            return lights.ToArray();    
+            return lights.ToArray();
         }
     
     }
@@ -315,20 +326,22 @@ namespace IngameScript
             get { return _name; }
         }
 
-        virtual public void OnEnter()
+        public void OnBindBlocks(StateMachine theMachine)
         {
             // Rebind the blocks on the actions and conditions
-            // TODO: decide what to do with the exceptions.
             foreach(IStateAction action in _actions)
             {
-                action.OnBindBlocks(_machine);
+                action.OnBindBlocks(theMachine);
             }              
 
             foreach(TransitionWithCondition transition in _conditions)
             {
-                transition.Condition.OnBindBlocks(_machine);
+                transition.Condition.OnBindBlocks(theMachine);
             }
+        }
 
+        public void OnEnter()
+        {
             foreach(IStateAction action in _actions)
             {
                 action.OnEnter();

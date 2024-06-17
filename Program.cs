@@ -378,6 +378,9 @@ namespace IngameScript
                         _parkingStateMachine.SetStartState(firstStateName);                        
                     }
 
+                    // Start-it-up (might bind blocks and cause errors)
+                    _parkingStateMachine.Start();
+
                     // Everything went well, start the updates
                     Runtime.UpdateFrequency = UpdateFrequency.Update1;
                 }
