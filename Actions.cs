@@ -108,7 +108,8 @@ namespace IngameScript
                 _attachedPiston.Velocity = directionMultiplier * _maxVelocity;
             }
 
-            _theMachine.stateStatus("P: " + _attachedPiston.CurrentPosition + " => " + _targetPosition + " V: " + _attachedPiston.Velocity);
+            if (_theMachine.IsOutputting(StateMachine.OutputLevel.STATUS))
+                _theMachine.LogMessage(StateMachine.OutputLevel.STATUS, "P: " + _attachedPiston.CurrentPosition + " => " + _targetPosition + " V: " + _attachedPiston.Velocity);
         }
     } 
 
@@ -312,7 +313,8 @@ namespace IngameScript
                 float progress = (float)_currentTick/(float)_delayInTicks;
                 float newValue = _startingValue + ( (_targetValue -  _startingValue) * progress);
 
-                _theMachine.stateStatus("Value " +  progress + " => " + newValue);
+                if (_theMachine.IsOutputting(StateMachine.OutputLevel.STATUS))
+                    _theMachine.LogMessage(StateMachine.OutputLevel.STATUS, "Value " +  progress + " => " + newValue);
 
                 _theBlock.SetValueFloat(_propertyName, newValue);
             }

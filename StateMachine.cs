@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.Eventing.Reader;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection.Emit;
@@ -39,15 +40,34 @@ namespace IngameScript
         private Dictionary<String, State> _states = new Dictionary<String, State>();
         private Dictionary<string, string> _commandTransitions = new Dictionary<string, string>();
         private List<TransitionWithCondition> _conditions = new List<TransitionWithCondition>();
+        private OutputLevel _outputLevel;
 
         // State
         private State _currentState = null;
         private State _nextState = null;
-        private StringBuilder _displayText = new StringBuilder();
+
+        // Managing the display
+        private class TraceMessage
+        {
+            public int TicksRemaining;
+            public string Message;
+
+            public TraceMessage(float delay, string message) 
+            {
+                 TicksRemaining = (int)Math.Abs(60f * delay); 
+                 Message = message;
+            }
+        }
+
+        private StringBuilder _displayStatus = new StringBuilder();
+
+        private TraceMessage[] _displayTraces = { null, null };
+        private int _lastdisplayTrace = -1;
 
         public StateMachine(MyGridProgram theProgram)
         {
             _theProgram = theProgram;
+            _outputLevel = OutputLevel.TRACE;
         }
 
         // Properties
@@ -77,6 +97,26 @@ namespace IngameScript
             _theSurface.WriteText("State Machine Connected");
         }
 
+        public enum OutputLevel {
+            NONE = 0,
+            LABEL = 1,
+            ERROR = 2,
+            STATUS = 3,
+            TRACE = 4,
+        } 
+
+        public void SetOutputLevel(string outputLevel)
+        {
+            if (outputLevel == LCDOutputLevel.NONE)
+                _outputLevel = OutputLevel.NONE;
+            else if (outputLevel == LCDOutputLevel.LABEL)
+                _outputLevel = OutputLevel.LABEL;
+            else if (outputLevel == LCDOutputLevel.ERROR)
+                _outputLevel = OutputLevel.ERROR;
+            else if (outputLevel == LCDOutputLevel.STATUS)
+                _outputLevel = OutputLevel.STATUS;
+        }
+
         public string SerializeState()
         {
             return _currentState.Name;
@@ -89,6 +129,8 @@ namespace IngameScript
 
         public void SetStartState(string stateName)
         {
+            // TODO: Validate that this is only entered when the machine is halted
+
             if (_currentState != null)
             {
                 throw new Exception("SetStartState can only be called once");
@@ -99,7 +141,7 @@ namespace IngameScript
                 throw new Exception(String.Format(Messages.STATE_NOT_FOUND, stateName));
             }            
 
-            stateStatus("--");
+            LogMessage(OutputLevel.TRACE, "Setting start state " + stateName);
         }
 
         public void AddState(State stateToAdd) {
@@ -124,6 +166,9 @@ namespace IngameScript
             {
                 state.OnBindBlocks(this);
             }
+
+            // Enter the start state
+            _currentState.OnEnter();
         }
 
         public void Halt()
@@ -131,36 +176,55 @@ namespace IngameScript
 
         }
 
-        public void logError(string error)
+        public bool IsOutputting(OutputLevel level)
         {
-            _theProgram.Echo("ERROR: " + error);
+            return ((_theSurface != null) && (_outputLevel >= level));
         }
-
-        public void stateStatus(string message)
+        
+        public void LogMessage(OutputLevel level, string message)
         {
-            if (_theSurface != null) {
-                _displayText.Append(message);
-                _displayText.Append('\n');
+            if (IsOutputting(level))
+            {
+                switch (level) 
+                {
+                    case OutputLevel.ERROR:
+                    case OutputLevel.TRACE:
+                        _lastdisplayTrace++;
+                        if (_lastdisplayTrace >= _displayTraces.Length)
+                        {
+                            Array.Resize(ref _displayTraces, _displayTraces.Length + 10);
+                        }
+                        _displayTraces[_lastdisplayTrace] = new TraceMessage(4, message);
+                        break;
+                    case OutputLevel.STATUS:
+                        _displayStatus.Append(message);
+                        _displayStatus.Append('\n');
+                        break;
+                }
             }
         }
 
-        public void transitionTo(string newStateName)
+        public void TransitionTo(string newStateName)
         {
             if (_nextState != null)
             {
-                // This is an error state, it shouldn't happen
+                LogMessage(OutputLevel.ERROR, "ERROR: Can't Transition from " + _currentState.Name + " to " + newStateName + " already transitionning to " + _nextState.Name);
+                Halt();
 
-                _theProgram.Echo("ERROR: Can't Transition from " + _currentState.Name + " to " + newStateName + " already transitionning to " + _nextState.Name);
                 return;
             } 
 
             if (!_states.TryGetValue(newStateName, out _nextState))
             {
-                stateStatus(String.Format(Messages.STATE_NOT_FOUND,newStateName));
-                foreach(string state in _states.Keys)
+                if (IsOutputting(OutputLevel.ERROR)) 
                 {
-                    stateStatus("S: '" + state + "'");
+                    LogMessage(OutputLevel.ERROR, String.Format(Messages.STATE_NOT_FOUND,newStateName));
+                    foreach(string state in _states.Keys)
+                    {
+                        LogMessage(OutputLevel.ERROR, "S: '" + state + "'");
+                    }
                 }
+                Halt();
             }
         }
 
@@ -175,7 +239,7 @@ namespace IngameScript
             {
                 if (transition.Condition.IsMet()) 
                 {
-                    transitionTo(transition.TargetState);
+                    TransitionTo(transition.TargetState);
 
                     return true;
                 }
@@ -195,7 +259,7 @@ namespace IngameScript
                     _currentState.OnExit();
                     _currentState = _nextState;
                     _nextState = null;
-                    stateStatus("Switched to state");
+                    LogMessage(OutputLevel.TRACE, String.Format(Messages.TRC_SWITCHED_STATE, _currentState.Name));
                     _currentState.OnEnter();
                 }            
                 else if (!CheckTransitions())
@@ -205,16 +269,40 @@ namespace IngameScript
             }
             catch (Exception e)
             {
-                if (_theSurface != null) {
-                    _theSurface.WriteText(e.Message);
-                }
+                LogMessage(OutputLevel.ERROR, e.Message + "currentState :" + _currentState?.Name);
             }
 
             // Update the display
-            if (_theSurface != null) {
-                _theSurface.WriteText(_displayText.ToString());
-                _displayText = new StringBuilder(_currentState.Name);
-                _displayText.Append("\n---\n");
+            if ( (_theSurface != null) && (_outputLevel > OutputLevel.NONE)) 
+            {
+                StringBuilder displayText = new StringBuilder(_currentState.Name);
+
+                if (IsOutputting(OutputLevel.STATUS))
+                {
+                    displayText.Append("\n---\n");
+                    displayText.Append(_displayStatus.ToString());                                    
+                    _displayStatus = new StringBuilder();
+                }
+
+                if (IsOutputting(OutputLevel.ERROR))
+                {
+                    displayText.Append("\n---\n");
+
+                    int lastValidIndex = -1;
+
+                    for(int i=0;i<=_lastdisplayTrace;i++)
+                    {
+                        if (_displayTraces[i].TicksRemaining > 0) 
+                        {
+                            _displayTraces[i].TicksRemaining--;
+                            displayText.Append(_displayTraces[i].Message).Append("\n");
+                            lastValidIndex++;                         
+                            _displayTraces[lastValidIndex] = _displayTraces[i];
+                        }
+                    }
+                    _lastdisplayTrace = lastValidIndex;
+                    _theSurface.WriteText(displayText.ToString());
+                }
             }
         }
 
@@ -230,7 +318,7 @@ namespace IngameScript
 
                 if (_commandTransitions.TryGetValue(command, out newState))
                 {
-                    this.transitionTo(newState);
+                    this.TransitionTo(newState);
                 }
             }
         }
@@ -312,6 +400,7 @@ namespace IngameScript
         private State _parentState = null;
         private readonly string _name;
         private string _doneStateName = null;
+        private bool _actionsDone = false; 
         private List<TransitionWithCondition> _conditions = new List<TransitionWithCondition>();
         private List<IStateAction> _actions = new List<IStateAction>();
         private Dictionary<string, string> _commandTransitions = new Dictionary<string, string>();
@@ -342,6 +431,7 @@ namespace IngameScript
 
         public void OnEnter()
         {
+            _actionsDone = false;            
             foreach(IStateAction action in _actions)
             {
                 action.OnEnter();
@@ -362,7 +452,7 @@ namespace IngameScript
             {
                 if (transition.Condition.IsMet()) 
                 {
-                    _machine.transitionTo(transition.TargetState);
+                    _machine.TransitionTo(transition.TargetState);
 
                     // Shortcut the testing
                     return true;
@@ -379,6 +469,8 @@ namespace IngameScript
 
         public void OnTick()
         {
+            // TODO: Maybe shortcut if we already know we're done
+
             bool areWeDone = true;
             foreach(IStateAction action in _actions)
             {
@@ -387,14 +479,19 @@ namespace IngameScript
                 areWeDone &= action.IsDone();
             }       
 
-            if ( (_doneStateName != null) && areWeDone)            
+            if (areWeDone)
             {
-                _machine.transitionTo(_doneStateName);
+                if (_doneStateName != null)
+                {
+                    _machine.TransitionTo(_doneStateName);
+                }
+                else if (!_actionsDone)
+                {
+                    _machine.LogMessage(StateMachine.OutputLevel.TRACE, String.Format(Messages.TRC_ACTIONS_DONE_WAITING, Name));
+                }
             }
-            else if (areWeDone)
-            {
-                _machine.stateStatus("Waiting");
-            }
+
+            _actionsDone = areWeDone;
         }
 
         public void OnCommand(string command)
@@ -403,7 +500,7 @@ namespace IngameScript
 
             if (_commandTransitions.TryGetValue(command, out newState))
             {
-                _machine.transitionTo(newState);
+                _machine.TransitionTo(newState);
             }
             else 
             {

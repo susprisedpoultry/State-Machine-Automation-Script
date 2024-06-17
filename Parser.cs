@@ -36,11 +36,22 @@ namespace IngameScript
         public static readonly string START = "START";
     }
     
+    public class LCDOutputLevel {
+
+        public static readonly string NONE = "NONE";
+        public static readonly string LABEL = "LABEL";
+        public static readonly string ERROR = "ERROR";
+        public static readonly string STATUS = "STATUS";
+        public static readonly string TRACE = "TRACE";
+    }
+
     public class Functions {
         public static readonly string COMMAND = "Command";
         public static readonly string CONNECTORSTATE = "ConnectorState";
         public static readonly string SENSORORSTATE = "SensorState";
         public static readonly string CONECTTERMINAL = "ConnectTerminal";
+        public static readonly string OUTPUTLCD = "OutputLCD";        
+        public static readonly string OUTPUTLEVEL = "OutputLevel";        
         public static readonly string TRIGGERTIMER = "TriggerTimer";
         public static readonly string SETENABLED = "SetEnabled";
         public static readonly string SETANGLE = "SetAngle";
@@ -58,6 +69,7 @@ namespace IngameScript
         public static readonly string TK_STATE = "State";
         public static readonly string TK_STEP = "Step";
         public static readonly string TK_ACTION = "Action";
+        public static readonly string TK_OPTION = "Option";        
         public static readonly string TK_GO = "Go";
         public static readonly string TK_WHEN = "When";
         public static readonly string TK_THENGO = "ThenGo";
@@ -86,6 +98,12 @@ namespace IngameScript
                                                           SensorStates.UNDETECTED};
         public static readonly string[] TIMER_TRIGER_TYPE = { TimerTriggerType.NOW, 
                                                               TimerTriggerType.START};
+
+        public static readonly string[] OUTPUT_LEVELS = { LCDOutputLevel.NONE,
+                                                          LCDOutputLevel.LABEL,
+                                                          LCDOutputLevel.ERROR,
+                                                          LCDOutputLevel.STATUS,
+                                                          LCDOutputLevel.TRACE};
 
 
         private List<ParsedCommand> _commands;
@@ -475,6 +493,7 @@ namespace IngameScript
                     }
                     else if (
                         (parsedLine[0] == TK_ACTION) || 
+                        (parsedLine[0] == TK_OPTION) || 
                         (parsedLine[0] == TK_WHEN) || 
                         (parsedLine[0] == TK_AND)
                         )

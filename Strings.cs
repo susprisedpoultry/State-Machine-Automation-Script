@@ -16,6 +16,13 @@ namespace IngameScript
         public static readonly string BLOCK_NOT_FOUND = "Block not found command {0}";
         public static readonly string SCREEN_NOT_FOUND = "Unable to get screen #{0} from block {1}";
         public static readonly string STATE_NOT_FOUND = "Can't Transition to '{0}' state not found";
-        public static readonly string PROP_NOT_FOUND ="Property '{0}' not found for block {1}";
+        public static readonly string PROP_NOT_FOUND = "Property '{0}' not found for block {1}";
+        public static readonly string OPTION_ONLY_VALID_AFTER_MACHINE = "Option: is only valid after Machine: and before State:";
+        public static readonly string DEPRECATED_FUNCTION = "Function '{0}' is deprecated, use '{1}' instead.";
+        public static readonly string ACTION_ONLY_VALID_IN_STATE = "Action '{0}' only valid inside a state";
+
+        // Trace messages
+        public static readonly string TRC_SWITCHED_STATE = "Switching to state '{0}'";
+        public static readonly string TRC_ACTIONS_DONE_WAITING = "Actions done for '{0}' waiting for transition.";
     }        
 }

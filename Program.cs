@@ -26,6 +26,7 @@ using VRage.Generics;
 using VRageMath;
 using VRageRender;
 using System.CodeDom;
+using VRage.Scripting;
 
 namespace IngameScript
 {
@@ -283,6 +284,39 @@ namespace IngameScript
                         currentState.TransitionWhenDone = stateCommand.Parameter;
                         continue;
                     }
+                    else if (command.Name == Parser.TK_OPTION)
+                    {
+                        if (currentState != null)
+                        {
+                            throw new Exception(Messages.OPTION_ONLY_VALID_AFTER_MACHINE);
+                        }
+
+                        Parser.FunctionCommand optionCommand = command as Parser.FunctionCommand;
+
+
+                        if (optionCommand.Function.IsFunctionMatch(Functions.OUTPUTLCD,2)) 
+                        {
+                            int terminalIndex = 0;
+
+                            if (optionCommand.Function.ParamCount == 2) 
+                            {
+                                terminalIndex = optionCommand.Function.GetIntParam(1, "terminalIndex");
+                            }
+
+                            _parkingStateMachine.ConnectTerminal(optionCommand.Function.GetStringParam(0, "blockName"), terminalIndex);
+
+                            continue;
+                        }
+                        if (optionCommand.Function.IsFunctionMatch(Functions.OUTPUTLEVEL,1)) 
+                        {
+                            _parkingStateMachine.SetOutputLevel(optionCommand.Function.GetValidatedStringParam(0, "outputLevel", Parser.OUTPUT_LEVELS));
+
+                            continue;
+                        }                        
+
+
+                        continue;
+                    }
                     else if (command.Name == Parser.TK_ACTION)
                     {
                         Parser.FunctionCommand actionCommand = command as Parser.FunctionCommand;
@@ -291,19 +325,10 @@ namespace IngameScript
                         {
                             if (actionCommand.Function.IsFunctionMatch(Functions.CONECTTERMINAL,2)) 
                             {
-                                int terminalIndex = 0;
-
-                                if (actionCommand.Function.ParamCount == 2) 
-                                {
-                                    terminalIndex = actionCommand.Function.GetIntParam(1, "terminalIndex");
-                                }
-
-                                _parkingStateMachine.ConnectTerminal(actionCommand.Function.GetStringParam(0, "blockName"), terminalIndex);
-
-                                continue;
+                                throw new Exception(String.Format(Messages.DEPRECATED_FUNCTION, "Action:SetTerminal()", "Option:OutputLCD"));
                             }
 
-                            throw new Exception("Action: command only valid inside a state");
+                            throw new Exception(String.Format(Messages.ACTION_ONLY_VALID_IN_STATE, actionCommand.ToString()));
                         }
 
                         if (actionCommand.Function.IsFunctionMatch(Functions.SETANGLE, 4)) 
