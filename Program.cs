@@ -82,7 +82,7 @@ namespace IngameScript
             else if (whenCommand.Function.IsFunctionMatch(Functions.SENSORORSTATE, 2))
             {
                 return new SensorStateCondition(whenCommand.Function.GetStringParam(0, "blockName"),
-                                                whenCommand.Function.GetValidatedStringParam(1, "blockName", Parser.SENSOR_STATES));
+                                                whenCommand.Function.GetValidatedStringParam(1, "triggerState", Parser.SENSOR_STATES));
             }
             else
             {

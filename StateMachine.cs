@@ -374,7 +374,11 @@ namespace IngameScript
             _condition2 = condition2;
         }
 
-        public void OnBindBlocks(StateMachine theMachine) {}
+        public void OnBindBlocks(StateMachine theMachine) 
+        {
+            _condition1.OnBindBlocks(theMachine);
+            _condition2.OnBindBlocks(theMachine);
+        }
 
         public bool IsMet()
         {
