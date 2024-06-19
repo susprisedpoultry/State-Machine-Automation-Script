@@ -59,6 +59,7 @@ namespace IngameScript
         public static readonly string LOCKCONNECTOR = "LockConnector";
         public static readonly string SETVALUEFLOAT = "SetValueFloat";
         public static readonly string SETLIGHTCOLOR = "SetLightColor";
+        public static readonly string WRITETOLCD = "WriteToLCD";
         public static readonly string RGB = "RGB";        
     }
 

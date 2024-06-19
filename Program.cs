@@ -374,6 +374,34 @@ namespace IngameScript
                                                                            new Color(color.Red, color.Green, color.Blue),
                                                                            actionCommand.Function.GetFloatParam(2, "transitionDuration")));
                         }
+                        else if (actionCommand.Function.IsFunctionMatch(Functions.WRITETOLCD, 5))
+                        {
+                            int screenIndex = 0;
+                            Color? textColor = null;
+                            Color? backColor = null;
+
+                            if (actionCommand.Function.ParamCount >= 3)
+                            {
+                                screenIndex = actionCommand.Function.GetIntParam(2, "screenIndex");
+                            }
+                            if (actionCommand.Function.ParamCount >= 4)
+                            {
+                                Parser.Color color = actionCommand.Function.GetColorParam(3, "textColor");
+
+                                textColor = new Color(color.Red, color.Green, color.Blue);
+                            }
+                            if (actionCommand.Function.ParamCount >= 5)
+                            {
+                                Parser.Color color = actionCommand.Function.GetColorParam(4, "backColor");
+
+                                backColor = new Color(color.Red, color.Green, color.Blue);
+                            }                            
+                            currentState.AddAction(new SetLCDTextAction(actionCommand.Function.GetStringParam(0, "blockName"),
+                                                                        actionCommand.Function.GetStringParam(1, "message"),
+                                                                        screenIndex,
+                                                                        textColor,
+                                                                        backColor));                            
+                        }
                         else
                         {
                             throw new Exception(String.Format(Messages.UNEXPECTED_FUNCTION, actionCommand.Function, command.Line));

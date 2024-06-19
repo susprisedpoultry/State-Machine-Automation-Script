@@ -78,22 +78,8 @@ namespace IngameScript
 
         public void ConnectTerminal(string lcdName, int screenIndex = 0)
         {
-            IMyTerminalBlock namedBlock = _theProgram.GridTerminalSystem.GetBlockWithName(lcdName);
-            IMyTextSurfaceProvider cockpit = namedBlock as IMyTextSurfaceProvider;
+            _theSurface = FindLCD(lcdName, screenIndex);
 
-            if (namedBlock == null)
-                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, lcdName));
-
-            // If we didn't hit a surface right away, it is a cockpit or console
-            if (_theSurface == null)
-            {
-                _theSurface = cockpit.GetSurface(screenIndex);
-
-                if (_theSurface == null) 
-                {
-                    throw new Exception(String.Format(Messages.SCREEN_NOT_FOUND, screenIndex, lcdName));
-                }
-            }
 
             _theSurface.ContentType = ContentType.TEXT_AND_IMAGE;
             _theSurface.WriteText("State Machine Connected");
@@ -332,6 +318,29 @@ namespace IngameScript
 
                 LogMessage(OutputLevel.TRACE, String.Format(Messages.TRC_COMMAND_NOTHANDLED, command, _currentState.Name));
             }
+        }
+
+        public IMyTextSurface FindLCD(string lcdName, int screenIndex)
+        {
+            IMyTerminalBlock namedBlock = _theProgram.GridTerminalSystem.GetBlockWithName(lcdName);
+            IMyTextSurfaceProvider cockpit = namedBlock as IMyTextSurfaceProvider;
+            IMyTextSurface theSurface = namedBlock as IMyTextSurface;
+
+            if (namedBlock == null)
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, lcdName));
+
+            // If we didn't hit a surface right away, it is a cockpit or console
+            if (theSurface == null)
+            {
+                theSurface = cockpit.GetSurface(screenIndex);
+
+                if (theSurface == null) 
+                {
+                    throw new Exception(String.Format(Messages.SCREEN_NOT_FOUND, screenIndex, lcdName));
+                }
+            }
+
+            return theSurface;
         }
 
         public IMyTerminalBlock[] FindBlockOrGroupbyName(string name)

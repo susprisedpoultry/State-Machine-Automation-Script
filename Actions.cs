@@ -26,6 +26,7 @@ using VRage.Generics;
 using VRageMath;
 using VRageRender;
 using Sandbox.Game.Entities.Cube;
+using System.Numerics;
 
 namespace IngameScript
 {
@@ -568,5 +569,57 @@ namespace IngameScript
             }
         }
     } 
+
+    public class SetLCDTextAction : IStateAction
+    {
+        private string _blockName;
+        private string _message;
+        private int _screenIndex;
+        private Color? _textColor;
+        private Color? _backColor;
+
+        // State data
+        private StateMachine _theMachine;
+        private IMyTextSurface _theSurface;
+        private IMySensorBlock _theSensor;
+
+        public SetLCDTextAction(string blockName, string message, int screenIndex, Color? textColor, Color? BackColor)
+        {
+            _blockName = blockName;
+            _message = message;
+            _screenIndex = screenIndex;
+            _textColor = textColor;
+            _backColor = BackColor;
+        }
+
+        public void OnBindBlocks(StateMachine theMachine)
+        {
+            _theMachine = theMachine;
+            _theSurface = theMachine.FindLCD(_blockName, _screenIndex);
+        }
+
+        public void OnEnter() 
+        {
+            _theSurface.WriteText(_message);       
+
+            if (_textColor != null)
+            {
+                _theSurface.FontColor = (Color)_textColor;
+            }     
+
+            if (_backColor != null)
+            {
+                _theSurface.BackgroundColor = (Color)_backColor;
+            }
+        }
+
+        public void OnExit() {}
+        public void OnTick() {}
+        public bool IsDone()
+        {
+            return true;
+        }
+
+    }
 
 }
