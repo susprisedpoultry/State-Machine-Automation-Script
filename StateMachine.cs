@@ -326,6 +326,12 @@ namespace IngameScript
                     this.TransitionTo(newState);
                 }
             }
+
+            // Trace out when we are not handling a command
+            if (IsOutputting(OutputLevel.TRACE) && (_nextState == null)) {
+
+                LogMessage(OutputLevel.TRACE, String.Format(Messages.TRC_COMMAND_NOTHANDLED, command, _currentState.Name));
+            }
         }
 
         public IMyTerminalBlock[] FindBlockOrGroupbyName(string name)

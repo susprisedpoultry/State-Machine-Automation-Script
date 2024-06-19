@@ -24,5 +24,6 @@ namespace IngameScript
         // Trace messages
         public static readonly string TRC_SWITCHED_STATE = "Switching to state '{0}'";
         public static readonly string TRC_ACTIONS_DONE_WAITING = "Actions done for '{0}' waiting for transition.";
+        public static readonly string TRC_COMMAND_NOTHANDLED = "Command not handled : {0} in state {1}";
     }        
 }
