@@ -59,6 +59,8 @@ namespace IngameScript
             }
         }
 
+        private StringBuilder _displayText = new StringBuilder();
+
         private StringBuilder _displayStatus = new StringBuilder();
 
         private TraceMessage[] _displayTraces = { null, null };
@@ -176,6 +178,8 @@ namespace IngameScript
 
         }
 
+        public float TicksPerSecond { get { return 60f; } }
+
         public bool IsOutputting(OutputLevel level)
         {
             return ((_theSurface != null) && (_outputLevel >= level));
@@ -275,18 +279,19 @@ namespace IngameScript
             // Update the display
             if ( (_theSurface != null) && (_outputLevel > OutputLevel.NONE)) 
             {
-                StringBuilder displayText = new StringBuilder(_currentState.Name);
+                _displayText.Clear();
+                _displayText.Append(_currentState.Name);
 
                 if (IsOutputting(OutputLevel.STATUS))
                 {
-                    displayText.Append("\n---\n");
-                    displayText.Append(_displayStatus.ToString());                                    
-                    _displayStatus = new StringBuilder();
+                    _displayText.Append("\n---\n");
+                    _displayText.Append(_displayStatus.ToString());                                    
+                    _displayStatus.Clear();
                 }
 
                 if (IsOutputting(OutputLevel.ERROR))
                 {
-                    displayText.Append("\n---\n");
+                    _displayText.Append("\n---\n");
 
                     int lastValidIndex = -1;
 
@@ -295,13 +300,13 @@ namespace IngameScript
                         if (_displayTraces[i].TicksRemaining > 0) 
                         {
                             _displayTraces[i].TicksRemaining--;
-                            displayText.Append(_displayTraces[i].Message).Append("\n");
+                            _displayText.Append(_displayTraces[i].Message).Append("\n");
                             lastValidIndex++;                         
                             _displayTraces[lastValidIndex] = _displayTraces[i];
                         }
                     }
                     _lastdisplayTrace = lastValidIndex;
-                    _theSurface.WriteText(displayText.ToString());
+                    _theSurface.WriteText(_displayText.ToString());
                 }
             }
         }
@@ -330,7 +335,6 @@ namespace IngameScript
 
             if (group != null) 
             {
-                //group.GetBlocksOfType<T>(lights);      
                 group.GetBlocks(lights);
             }
             else

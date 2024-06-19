@@ -163,17 +163,23 @@ namespace IngameScript
         // Configuration
         private string _blockName;
         private float _maxRPM;
-        private float _targetAngle;
+        private float _targetAngleInRAD;
         private string _direction;
 
         // State Info
         private IMyMotorStator _attachedRotor; 
+        StateMachine _theMachine;
         private bool _isOnTarget;
+        private float _directionMultiplier;
+        private float[] _ease_in_distances = { 0, 0, 0, 0 };
+
 
         // Constants
-        private static readonly float EASE_IN_ANGLE = 5f/ 57.2957795f;
-        private static readonly float TARGET_ANGLE = 0.5f/ 57.2957795f;
-        private static readonly float EASE_IN_MAX_RPM = 0.5f;
+        private static readonly float DEGREES_TO_RAD = 1.0f / 57.2957795f;
+        private static readonly float TARGET_ANGLE = 0.5f * DEGREES_TO_RAD; // We're precise to half a degree
+        private static readonly float EASE_IN_MIN_RPM = 0.5f;
+        private static readonly float FULL_CIRCLE = 360f * DEGREES_TO_RAD;
+        private static readonly float RPM_TO_RAD_PER_SEC = 0.10472f;
 
 
         public TurnRotorAction(string blockName, 
@@ -183,12 +189,13 @@ namespace IngameScript
         {
             _blockName = blockName;
             _maxRPM = Math.Abs(maxRPM);
-            _targetAngle = targetAngle;
+            _targetAngleInRAD = targetAngle * DEGREES_TO_RAD;
             _direction = direction;
         }
 
         public void OnBindBlocks(StateMachine theMachine)
         {
+            _theMachine = theMachine;
             _attachedRotor = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyMotorStator;  
 
             if (_attachedRotor == null)
@@ -204,22 +211,48 @@ namespace IngameScript
 
         public void OnEnter()
         {
-            _isOnTarget = false;
+            if (_direction == RotorDirection.NEGATIVE)
+            {
+                _directionMultiplier = -1f;
+            }
+            else if (_direction == RotorDirection.POSITIVE)
+            {
+                _directionMultiplier = 1f;
+            }
+            else if (GetDistance(-1f) < GetDistance(1f))
+            {
+                _directionMultiplier = -1f;
+            }
+            else
+            {
+                _directionMultiplier = 1f;
+            }
+
+            // Figure-out the ease-in distance
+            float distanceInRAD = GetDistance(_directionMultiplier);
+            float radPer10Ticks = _maxRPM * RPM_TO_RAD_PER_SEC / 6;
+
+
+            if (distanceInRAD < TARGET_ANGLE)
+            {
+                _attachedRotor.TargetVelocityRPM = 0;
+                _isOnTarget = true;
+            }
+            else
+            {
+                _ease_in_distances[0]=radPer10Ticks * 3f;
+                _ease_in_distances[1]=radPer10Ticks * 2f;
+                _ease_in_distances[2]=radPer10Ticks * 1f;
+                _ease_in_distances[3]=radPer10Ticks * 0.5f;
+
+                _attachedRotor.TargetVelocityRPM = _directionMultiplier * _maxRPM;
+                _isOnTarget = false;
+            }
         }
 
         public void OnTick()
         {
-            float targetAngleInRAD = _targetAngle / 57.2957795f;
-            float distanceInRAD = targetAngleInRAD - _attachedRotor.Angle;
-            float directionMultiplyer = 1f;
-
-            // TODO: Look for overflow to get real shortest path
-            if ( (_direction == RotorDirection.NEGATIVE) || (distanceInRAD < 0) )
-            {
-                directionMultiplyer = -1f;
-            }
-
-            distanceInRAD = Math.Abs(distanceInRAD);
+            float distanceInRAD = GetDistance(_directionMultiplier);
 
             _isOnTarget = false;
             if (distanceInRAD < TARGET_ANGLE)
@@ -227,14 +260,47 @@ namespace IngameScript
                 _attachedRotor.TargetVelocityRPM = 0;
                 _isOnTarget = true;
             }
-            else if (distanceInRAD < EASE_IN_ANGLE)
+            else 
             {
-                _attachedRotor.TargetVelocityRPM = directionMultiplyer * Math.Min(EASE_IN_MAX_RPM, _maxRPM);
+                float velocity = _maxRPM;
+                int easein = 0;
+
+                while ( (easein < _ease_in_distances.Length) && (distanceInRAD < _ease_in_distances[easein]) )
+                {
+                    velocity*=0.5f;
+                    easein++;
+                }
+
+                if (_theMachine.IsOutputting(StateMachine.OutputLevel.STATUS))
+                    _theMachine.LogMessage(StateMachine.OutputLevel.STATUS, "R: " + distanceInRAD + " velocity: " + velocity );
+
+
+                _attachedRotor.TargetVelocityRPM = _directionMultiplier * Math.Max(EASE_IN_MIN_RPM, velocity);
+            }
+        }
+
+        private float GetDistance(float direction)
+        {
+            if (direction >= 0f)
+            {
+                float distanceInRAD = _targetAngleInRAD - _attachedRotor.Angle;
+
+                if (distanceInRAD < 0) {
+                    distanceInRAD += FULL_CIRCLE;
+                }                
+
+                return distanceInRAD;
             }
             else 
             {
-                _attachedRotor.TargetVelocityRPM = directionMultiplyer * _maxRPM;
-            }
+                float distanceInRAD = _attachedRotor.Angle - _targetAngleInRAD;
+
+                if (distanceInRAD < 0) {
+                    distanceInRAD += FULL_CIRCLE;
+                }
+
+                return distanceInRAD;                
+            }        
         }
 
         public void OnExit()
