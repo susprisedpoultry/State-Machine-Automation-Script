@@ -98,7 +98,7 @@ namespace IngameScript
             else if (whenCommand.Function.IsFunctionMatch(Functions.BLOCKSALIGNED, 4))
             {
                 return new ConnectedBlocksAligned(whenCommand.Function.GetStringParam(0, "connectorName"),
-                                         whenCommand.Function.GetStringParam(1, "_alignmentBlockNAme"),
+                                         whenCommand.Function.GetStringParam(1, "alignmentBlockName"),
                                          whenCommand.Function.GetValidatedStringParam(2, "axis", Parser.WORLD_AXISES),
                                          whenCommand.Function.GetFloatParam(3, "tolerance"));
             }            

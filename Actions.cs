@@ -45,7 +45,6 @@ namespace IngameScript
         private float[] _ease_in_distances = { 0, 0, 0, 0 };        
 
         // Constants
-        private static readonly float EASE_IN_DISTANCE = 0.2f;
         private static readonly float ON_TARGET_DISTANCE = 0.01f;
         private static readonly float EASE_IN_VELOCITY = 0.5f;
 
