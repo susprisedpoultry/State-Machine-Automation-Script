@@ -31,9 +31,27 @@ namespace IngameScript
         public static readonly string UNDETECTED = "UNDETECTED";
     }
 
+    public class BlockFoundStates {
+        public static readonly string FOUND = "FOUND";
+        public static readonly string NOTFOUNT = "NOTFOUND";
+    }
+
+
+    public class TopAttachedStates {
+        public static readonly string ATTACHED = "ATTACHED";
+        public static readonly string DETACHED = "DETACHED";
+    }
+
+
     public class TimerTriggerType {
         public static readonly string NOW = "NOW";
         public static readonly string START = "START";
+    }
+
+    public class Axis {
+        public static readonly string X = "X";
+        public static readonly string Y = "Y";
+        public static readonly string Z = "Z";
     }
     
     public class LCDOutputLevel {
@@ -49,11 +67,15 @@ namespace IngameScript
         public static readonly string COMMAND = "Command";
         public static readonly string CONNECTORSTATE = "ConnectorState";
         public static readonly string SENSORORSTATE = "SensorState";
+        public static readonly string FOUNDBLOCKSTATE = "FoundBlockState";
+        public static readonly string BLOCKTOPSTATE = "BlockTopState";
+        public static readonly string BLOCKSALIGNED = "BlocksAligned";
         public static readonly string CONECTTERMINAL = "ConnectTerminal";
         public static readonly string OUTPUTLCD = "OutputLCD";        
         public static readonly string OUTPUTLEVEL = "OutputLevel";        
         public static readonly string TRIGGERTIMER = "TriggerTimer";
         public static readonly string SETENABLED = "SetEnabled";
+        public static readonly string APPLYACTION = "ApplyAction";
         public static readonly string SETANGLE = "SetAngle";
         public static readonly string SETPOSITION = "SetPosition";
         public static readonly string LOCKCONNECTOR = "LockConnector";
@@ -95,17 +117,23 @@ namespace IngameScript
         public static readonly string[] CONNECTOR_STATES = { ConnectorStates.LOCKED,
                                                              ConnectorStates.UNLOCKED,
                                                              ConnectorStates.READY};
+        public static readonly string[] FOUND_BLOCK_STATES = { BlockFoundStates.FOUND,
+                                                               BlockFoundStates.NOTFOUNT };
+
+        public static readonly string[] TOP_ATTACHED_STATES = { TopAttachedStates.ATTACHED, 
+                                                                TopAttachedStates.DETACHED };                                                               
         public static readonly string[] SENSOR_STATES = { SensorStates.DETECTED,
                                                           SensorStates.UNDETECTED};
         public static readonly string[] TIMER_TRIGER_TYPE = { TimerTriggerType.NOW, 
                                                               TimerTriggerType.START};
+
+        public static readonly string[] WORLD_AXISES = { Axis.X, Axis.Y, Axis.Z };
 
         public static readonly string[] OUTPUT_LEVELS = { LCDOutputLevel.NONE,
                                                           LCDOutputLevel.LABEL,
                                                           LCDOutputLevel.ERROR,
                                                           LCDOutputLevel.STATUS,
                                                           LCDOutputLevel.TRACE};
-
 
         private List<ParsedCommand> _commands;
 
@@ -470,14 +498,14 @@ namespace IngameScript
             for (int i=0;i<lines.Length;i++)
             {
                 string line = lines[i].Trim();
-                string strippedLine = line.Split(COMMENT_MARKER)[0];
+                string strippedLine = line.Split(COMMENT_MARKER)[0].Trim();
                 string[] parsedLine = strippedLine.Split(COMMAND_MARKER);
 
                 try {
 
                     if (parsedLine.Length != 2)
                     {
-                        if (line.Length != 0)
+                        if (strippedLine.Length != 0)
                         {
                             throw new Exception(Messages.NO_COMMAND);
                         }

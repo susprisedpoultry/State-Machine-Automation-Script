@@ -1,54 +1,251 @@
 Machine:Parking
-Action:ConnectTerminal(Garage Console, 0)
+Option:OutputLCD(Helm Parking, 0)
 When:Command(Reset)
-ThenGO:RESET
-
+ThenGo:STOWING
+ 
 State:UNKNOWN
 
-State:RESET
-When:ConnectorState(Parking Arm Connector, CONNECTED)
+State:STOWING
+Action:WriteToLCD(TestLCD,Stowing arm,0,RGB(0,0,0),RGB(255,255,0))
+Action:SetEnabled(Parking Warning Lights, ENABLED) # Start warning lights
+When:ConnectorState(Parking Arm Connector, LOCKED)
 ThenGo:ERROR
 Step:
-Action:TriggerTimer(ParkingArmMovingTimerBlock,NOW) # Start the warning lights
-Action:SetAngle(Parking Arm Advanced Rotor,0,2)
+Action:SetPosition(Parking FB Piston,0,3)
 Step:
-Action:SetPosition(Parking FB Piston,0,1)
-Action:SetPosition(Parking LR Piston,0,1)
-GO:STOWED
+Action:SetAngle(Parking Arm Advanced Rotor,0,4,ANY)
+Action:SetAngle(Parking Arm Rotor,0,4,ANY) 
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,0.11,1) # Lift vehicle using rotor displacement
+Action:SetValueFloat(Parking Arm Rotor,Displacement,0.11,1) # Lift vehicle using rotor displacement
+Step:
+Action:SetPosition(Parking LR Piston,0,3)
+Go:STOWED
 
 State:STOWED
-Action:TriggerTimer(ParkingArmStoppedTimerBlock, NOW)
+Action:SetEnabled(Parking Warning Lights, DISABLED) # Stop warning lights
+Action:WriteToLCD(TestLCD,Bay Available,0,RGB(255,255,255),RGB(0,0,0))
+When:SensorState(Parking Occupied Sensor,DETECTED)
+ThenGo:VEHICLEIN
+
+State:VEHICLEIN
+Action:WriteToLCD(TestLCD,ADVANCE,0,RGB(255,255,255),RGB(0,255,0))
+When:SensorState(Parking Clearance Sensor,UNDETECTED)
+ThenGo:READYTOPARK
+When:SensorState(Parking Occupied Sensor,UNDETECTED)
+ThenGo:STOWED
+
+State:READYTOPARK
+Action:WriteToLCD(TestLCD,STOP,0,RGB(255,255,255),RGB(255,0,0))
+When:SensorState(Parking Clearance Sensor,DETECTED)
+ThenGo:VEHICLEIN
+When:SensorState(Parking Occupied Sensor,UNDETECTED)
+ThenGo:STOWED
 When:Command(Park)
-ThenGO:PARKING
+ThenGo:PARKING
 
 State:PARKING
+Action:WriteToLCD(TestLCD,Parking Vehicle,0,RGB(0,0,0),RGB(255,255,0))
+Action:SetEnabled(Parking Warning Lights, ENABLED) # Start warning lights
 Step:
-Action:TriggerTimer(ParkingArmMovingTimerBlock,NOW) #
-Action:SetPosition(Parking Arm Advanced Rotor,270,2,NEG)
+Action:SetAngle(Parking Arm Advanced Rotor,270,4,NEG)
 Step:
-Action:SetPosition(Parking LR Piston,3.5,2)
-Step:
-Action:SetPosition(Parking FB Piston,10,0.5)
+Action:SetPosition(Parking LR Piston,3.6,4)
+Step: # Move slow, catching the connector
+Action:SetPosition(Parking FB Piston,10,0.5) 
 When:ConnectorState(Parking Arm Connector, READY)
 ThenGo:PARKING.Capture
 Go:ERROR
-Step:Capture
-Action:LockConnector(Parking Arm Connector)
+Step:PARKING.Capture
+Action:LockConnector(Parking Arm Connector, LOCKED)
 Step:
-Action:ChangeProperty(Parking Arm Advanced Rotor,-0.11,2) # Lift vehicle using rotor displacement
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,-0.11,1) # Lift vehicle using rotor displacement
+Step: # TODO align to the center of parking better
+Action:SetAngle(Parking Arm Advanced Rotor,90,4,ANY)
+#Action:SetAngle(Parking Arm Rotor,0,4,ANY) 
+Action:SetPosition(Parking FB Piston,1.5,1)
+Action:SetPosition(Parking LR Piston,3,1)
 Step:
-Action:SetPosition(Parking Arm Advanced Rotor,90,2)
+Action:SetPosition(Parking LR Piston,5,0.5)
+When:BlocksAligned(Parking Arm Connector, TestLCD, X, 0.01)
+ThenGo:PARKING.Aligned
 Step:
-Action:ChangeProperty(Parking Arm Advanced Rotor,0.11,2)
+Action:SetPosition(Parking LR Piston,3.6,1)
+Step:PARKING.Aligned
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,0.11,1)
 Go:PARKED
 
 State:PARKED
-Action:TriggerTimer(ParkingArmStoppedTimerBlock,NOW) #
+Action:WriteToLCD(TestLCD,Vehicle Parked,0,RGB(255,255,255),RGB(0,0,0))
+Action:SetEnabled(Parking Warning Lights, DISABLED) # Stop warning lights
 When:Command(Park)
-ThenGO:PARKING
-When:ConnectorState(Parking Arm Connector, DISCONNECTED)
-And:SensorState(Parking Occupied Sensor, NOT_DETECTED)
-ThenGo:RESET
+ThenGo:PARKING
+When:ConnectorState(Parking Arm Connector, UNLOCKED)
+And:SensorState(Parking Occupied Sensor, UNDETECTED)
+ThenGo:STOWING
+When:Command(SwapModule)
+ThenGo:PULLINGMODULE
 
 State:ERROR
+When:Command(Reset)
+ThenGo:STOWING
+
+### Module swapping
+
+State:PULLINGMODULE  # Pulling module from the vehicle
+Action:WriteToLCD(TestLCD,Swapping module,0,RGB(0,0,0),RGB(255,255,0))
+Action:SetEnabled(Parking Warning Lights, ENABLED) # Start warning lights
+Action:SetPosition(Parking FB Piston,5, 4)
+Action:SetPosition(Parking LR Piston,3.6, 4)
+Action:SetAngle(Parking Arm Advanced Rotor,90,2,ANY)
+Action:SetAngle(Parking Arm Rotor,0,2,ANY)
+Go:MODULEPULLED 
+
+State:MODULEPULLED
+When:BlockTopState(Hangar Dock Rotor Left, DETACHED)
+ThenGo:MOVINGTOLEFT
+When:BlockTopState(Hangar Dock Rotor Right, DETACHED)
+ThenGo:MOVINGTORIGHT
+
+State:PUSHINGMODULE
+Action:SetPosition(Parking FB Piston,1,0.5)
+Step:
+Action:WriteToLCD(TestLCD,Re-attach module,0,RGB(255,255,255),RGB(0,0,0))
+Action:SetEnabled(Parking Warning Lights, DISABLED) # Stop warning lights
+When:FoundBlockState(Rover Connecting Rotor, FOUND, 1) 
+ThenGo:NUDGEBACK
+When:Command(PushModule)
+ThenGo:MOVINGTORIGHT
+
+State:NUDGEBACK
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,-0.11,1) # Lift vehicle using rotor displacement
+Step:
+Action:SetPosition(Parking FB Piston,1.5,0.5)
+Step:
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,0.11,1) # Lift vehicle using rotor displacement
+Go:PARKED
+
+### Going Left ###
+
+State:MOVINGTOLEFT # Moving to left with a module attached
+Action:SetPosition(Parking LR Piston,0,2) # Aligh the head with the rotor
+Step:
+Action:SetAngle(Parking Arm Advanced Rotor,50,2,NEG)  # Rotate the arm to face the rotor
+Action:SetAngle(Parking Arm Rotor,220,4,NEG)  # Rotate the arm to face the rotor
+Action:SetPosition(Parking FB Piston,0,1) # Move the piston all the way back
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,0.11,2)
+Go:ALIGNLEFTX
+
+State:ALIGNLEFTX
+Action:SetPosition(Parking LR Piston,2,0.5) 
+When:BlocksAligned(Parking Arm Connector, Hangar Dock Rotor Left, X, 0.01)
+ThenGo:ALIGNLEFTY
+Go:ERROR
+
+State:ALIGNLEFTY
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,-0.11,2)
+When:BlocksAligned(Parking Arm Connector, Hangar Dock Rotor Left, Y, 0.01)
+ThenGo:ALIGNLEFTZ
+Go:ERROR
+
+State:ALIGNLEFTZ
+Action:SetPosition(Parking FB Piston,1.2,0.5)
+When:BlocksAligned(Parking Arm Connector, Hangar Dock Rotor Left, Z, 5)
+ThenGo:ATTACHLEFT
+
+State:ATTACHLEFT
+Action:ApplyAction(Hangar Dock Rotor Left, Attach)
+When:BlockTopState(Hangar Dock Rotor Left, ATTACHED)
+ThenGo:GOGRABRIGHT
+
+State:GOGRABRIGHT
+Action:LockConnector(Parking Arm Connector, UNLOCKED)
+Step:
+Action:SetPosition(Parking FB Piston,0,3) 
+Action:SetAngle(Hangar Dock Rotor Left, 0, 0.5, ANY)
+Step:
+Action:SetAngle(Parking Arm Advanced Rotor,130,2,ANY)  
+Action:SetAngle(Parking Arm Rotor,140,4,ANY)  
+Action:SetPosition(Parking LR Piston,6.35,2)
+Step:
+Action:SetPosition(Parking FB Piston,1,0.5) 
+Step:
+Action:LockConnector(Parking Arm Connector, LOCKED)
+When:ConnectorState(Parking Arm Connector, LOCKED)
+ThenGo:MOVEMODULEFROMRIGHT
+
+State:MOVEMODULEFROMRIGHT
+Action:ApplyAction(Hangar Dock Rotor Right, Detach)
+Step:
+Action:SetPosition(Parking FB Piston,0,1) # Move themodule so it doesn't catch the rotor
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,0.11,1)
+Step:
+Action:SetAngle(Parking Arm Rotor,0,4,NEG)
+Action:SetAngle(Parking Arm Advanced Rotor,90,2,NEG)
+Action:SetPosition(Parking FB Piston,5, 1)
+Step:
+Action:SetPosition(Parking LR Piston,3.6, 2)
+Go:PUSHINGMODULE
+
+### Going right ###
+
+State:MOVINGTORIGHT
+Action:SetPosition(Parking LR Piston,6, 2) # Maybe a little less or more since we're going to adjust
+Step:
+Action:SetAngle(Parking Arm Advanced Rotor,130,2,POS)
+Action:SetAngle(Parking Arm Rotor,140,4,POS) 
+Action:SetPosition(Parking FB Piston,0, 1)
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,0.11,2)
+Go:ALIGNRIGHTX
+
+State:ALIGNRIGHTX
+Action:SetPosition(Parking LR Piston,7,0.5) 
+When:BlocksAligned(Parking Arm Connector, Hangar Dock Rotor Right, X, 0.01)
+ThenGo:ALIGNRIGHTY
+Go:ERROR
+
+State:ALIGNRIGHTY
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,-0.11,2)
+When:BlocksAligned(Parking Arm Connector, Hangar Dock Rotor Right, Y, 0.01)
+ThenGo:ALIGNRIGHTZ
+Go:ERROR
+
+State:ALIGNRIGHTZ
+Action:SetPosition(Parking FB Piston,1.2,0.5)
+When:BlocksAligned(Parking Arm Connector, Hangar Dock Rotor Right, Z, 5)
+ThenGo:ATTACHRIGHT
+
+State:ATTACHRIGHT
+Action:ApplyAction(Hangar Dock Rotor Right, Attach)
+When:BlockTopState(Hangar Dock Rotor Right, ATTACHED)
+ThenGo:GOGRABLEFT
+
+State:GOGRABLEFT
+Action:LockConnector(Parking Arm Connector, UNLOCKED)
+Step:
+Action:SetPosition(Parking FB Piston,0,3) 
+Action:SetAngle(Hangar Dock Rotor Right, 0, 0.5, ANY)
+Step:
+Action:SetAngle(Parking Arm Advanced Rotor,50,2,ANY)  
+Action:SetAngle(Parking Arm Rotor,220,4,ANY)  
+Action:SetPosition(Parking LR Piston,0.89,2)
+Step:
+Action:SetPosition(Parking FB Piston,1,0.5) 
+Step:
+Action:LockConnector(Parking Arm Connector, LOCKED)
+When:ConnectorState(Parking Arm Connector, LOCKED)
+ThenGo:MOVEMODULEFROMLEFT
+
+State:MOVEMODULEFROMLEFT
+Action:ApplyAction(Hangar Dock Rotor Left, Detach)
+Step:
+Action:SetPosition(Parking FB Piston,0,1) # Move themodule so it doesn't catch the rotor
+Action:SetValueFloat(Parking Arm Advanced Rotor,Displacement,0.11,1)
+Step:
+Action:SetAngle(Parking Arm Rotor,0,4,POS)
+Action:SetAngle(Parking Arm Advanced Rotor,90,2,POS)
+Action:SetPosition(Parking FB Piston,5, 1)
+Step:
+Action:SetPosition(Parking LR Piston,3.6, 0.5)
+Go:PUSHINGMODULE
+
 

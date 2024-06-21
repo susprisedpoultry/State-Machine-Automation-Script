@@ -84,9 +84,27 @@ namespace IngameScript
                 return new SensorStateCondition(whenCommand.Function.GetStringParam(0, "blockName"),
                                                 whenCommand.Function.GetValidatedStringParam(1, "triggerState", Parser.SENSOR_STATES));
             }
+            else if (whenCommand.Function.IsFunctionMatch(Functions.FOUNDBLOCKSTATE, 3))
+            {
+                return new BlockPresentCondition(whenCommand.Function.GetStringParam(0, "blockName"),
+                                                 whenCommand.Function.GetValidatedStringParam(1, "triggerState", Parser.FOUND_BLOCK_STATES),
+                                                 whenCommand.Function.GetFloatParam(2, "testDelay"));
+            }
+            else if (whenCommand.Function.IsFunctionMatch(Functions.BLOCKTOPSTATE, 2))
+            {
+                return new BlockTopState(whenCommand.Function.GetStringParam(0, "blockName"),
+                                                 whenCommand.Function.GetValidatedStringParam(1, "triggerState", Parser.TOP_ATTACHED_STATES));
+            }            
+            else if (whenCommand.Function.IsFunctionMatch(Functions.BLOCKSALIGNED, 4))
+            {
+                return new ConnectedBlocksAligned(whenCommand.Function.GetStringParam(0, "connectorName"),
+                                         whenCommand.Function.GetStringParam(1, "_alignmentBlockNAme"),
+                                         whenCommand.Function.GetValidatedStringParam(2, "axis", Parser.WORLD_AXISES),
+                                         whenCommand.Function.GetFloatParam(3, "tolerance"));
+            }            
             else
             {
-                throw new Exception (" Unsupported condition function " + whenCommand.Function);
+                throw new Exception (String.Format(Messages.UNSUPPORTED_CONDITION, whenCommand.Function.ToString()));
             }
         }
 
@@ -360,6 +378,11 @@ namespace IngameScript
                         {
                             currentState.AddAction(new LockConnectorAction(actionCommand.Function.GetStringParam(0, "blockName"),
                                                                        actionCommand.Function.GetValidatedStringParam(1, "timerStartType", Parser.CONNECTOR_STATES)));
+                        }
+                        else if (actionCommand.Function.IsFunctionMatch(Functions.APPLYACTION, 2)) 
+                        {
+                            currentState.AddAction(new ApplyAction(actionCommand.Function.GetStringParam(0, "blockName"),
+                                                                   actionCommand.Function.GetStringParam(1, "action")));
                         }
                         else if (actionCommand.Function.IsFunctionMatch(Functions.SETENABLED, 2)) 
                         {

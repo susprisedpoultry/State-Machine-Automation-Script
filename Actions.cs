@@ -42,6 +42,7 @@ namespace IngameScript
         // State Info
         private StateMachine _theMachine;
         private IMyPistonBase _attachedPiston = null;
+        private float[] _ease_in_distances = { 0, 0, 0, 0 };        
 
         // Constants
         private static readonly float EASE_IN_DISTANCE = 0.2f;
@@ -75,7 +76,41 @@ namespace IngameScript
 
         public void OnEnter()
         {
-            _isOnTarget = false;
+            float distance = _targetPosition - _attachedPiston.CurrentPosition;
+            float directionMultiplier = 1f;
+
+            if (distance < 0) 
+                directionMultiplier = -1f;
+
+            distance = Math.Abs(distance);
+
+
+            // Figure-out the ease-in distance
+            float distancePer10Ticks = _maxVelocity / 6f;
+
+
+            if (_theMachine.IsOutputting(StateMachine.OutputLevel.TRACE))
+            {
+
+                _theMachine.LogMessage(StateMachine.OutputLevel.TRACE, "Piston pos : " + _attachedPiston.CurrentPosition + " tar: " + _targetPosition );
+                _theMachine.LogMessage(StateMachine.OutputLevel.TRACE, "       dir : " + directionMultiplier + " dis: " + distance + " easein: " + distancePer10Ticks);
+            }
+
+            if (distance < ON_TARGET_DISTANCE)
+            {
+                _attachedPiston.Velocity = 0;
+                _isOnTarget = true;
+            }
+            else
+            {
+                _ease_in_distances[0]=distancePer10Ticks * 2f;
+                _ease_in_distances[1]=distancePer10Ticks * 1f;
+                _ease_in_distances[2]=distancePer10Ticks * .5f;
+                _ease_in_distances[3]=distancePer10Ticks * 0.25f;
+
+                _attachedPiston.Velocity = directionMultiplier * _maxVelocity;
+                _isOnTarget = false;
+            }            
         }
 
         public void OnExit()
@@ -94,23 +129,29 @@ namespace IngameScript
             distance = Math.Abs(distance);
 
             // TODO: Possible other conditions to be done (max reached, etc.)
+            // TODO: Make sure we're not constantly setting the velocity when we're at the destination            
             _isOnTarget = false;
             if (distance < ON_TARGET_DISTANCE)
             {
                 _attachedPiston.Velocity = 0;
                 _isOnTarget = true;
             }
-            else if (distance < EASE_IN_DISTANCE)
-            {
-                _attachedPiston.Velocity = directionMultiplier * Math.Min(EASE_IN_VELOCITY, _maxVelocity);
-            }
             else 
             {
-                _attachedPiston.Velocity = directionMultiplier * _maxVelocity;
-            }
+                float velocity = _maxVelocity;
+                int easein = 0;
 
-            if (_theMachine.IsOutputting(StateMachine.OutputLevel.STATUS))
-                _theMachine.LogMessage(StateMachine.OutputLevel.STATUS, "P: " + _attachedPiston.CurrentPosition + " => " + _targetPosition + " V: " + _attachedPiston.Velocity);
+                while ( (easein < _ease_in_distances.Length) && (distance < _ease_in_distances[easein]) )
+                {
+                    velocity*=0.5f;
+                    easein++;
+                }
+
+                _attachedPiston.Velocity = directionMultiplier * Math.Max(EASE_IN_VELOCITY, velocity);
+
+                if (_theMachine.IsOutputting(StateMachine.OutputLevel.STATUS))
+                    _theMachine.LogMessage(StateMachine.OutputLevel.STATUS, "P: " + _attachedPiston.CurrentPosition + " => " + _targetPosition + " V: " + _attachedPiston.Velocity);
+            }
         }
     } 
 
@@ -176,7 +217,7 @@ namespace IngameScript
 
 
         // Constants
-        private static readonly float DEGREES_TO_RAD = 1.0f / 57.2957795f;
+        private static readonly float DEGREES_TO_RAD = 0.01745329252f;
         private static readonly float TARGET_ANGLE = 0.5f * DEGREES_TO_RAD; // We're precise to half a degree
         private static readonly float EASE_IN_MIN_RPM = 0.5f;
         private static readonly float FULL_CIRCLE = 360f * DEGREES_TO_RAD;
@@ -231,7 +272,16 @@ namespace IngameScript
 
             // Figure-out the ease-in distance
             float distanceInRAD = GetDistance(_directionMultiplier);
-            float radPer10Ticks = _maxRPM * RPM_TO_RAD_PER_SEC / 6;
+            float radPer10Ticks = _maxRPM * RPM_TO_RAD_PER_SEC / 6f;
+
+
+            if (_theMachine.IsOutputting(StateMachine.OutputLevel.TRACE))
+            {
+
+                _theMachine.LogMessage(StateMachine.OutputLevel.TRACE, "Rotor pos : " + _attachedRotor.Angle + " tar: " + _targetAngleInRAD );
+                _theMachine.LogMessage(StateMachine.OutputLevel.TRACE, "      dir : " + _directionMultiplier + " dis: " + distanceInRAD );
+            }
+
 
 
             if (distanceInRAD < TARGET_ANGLE)
@@ -241,10 +291,10 @@ namespace IngameScript
             }
             else
             {
-                _ease_in_distances[0]=radPer10Ticks * 3f;
-                _ease_in_distances[1]=radPer10Ticks * 2f;
-                _ease_in_distances[2]=radPer10Ticks * 1f;
-                _ease_in_distances[3]=radPer10Ticks * 0.5f;
+                _ease_in_distances[0]=radPer10Ticks * 2f;
+                _ease_in_distances[1]=radPer10Ticks * 1f;
+                _ease_in_distances[2]=radPer10Ticks * 0.5f;
+                _ease_in_distances[3]=radPer10Ticks * 0.25f;
 
                 _attachedRotor.TargetVelocityRPM = _directionMultiplier * _maxRPM;
                 _isOnTarget = false;
@@ -463,6 +513,48 @@ namespace IngameScript
         }
     }
 
+    public class ApplyAction : IStateAction
+    {
+        // Configuration
+        private string _blockName;
+        private string _action;
+
+        // State Info
+        private StateMachine _theMachine;
+        private IMyTerminalBlock[] _theBlocks;
+
+        public ApplyAction(string blockName, 
+                                    string action)
+        {
+            _blockName = blockName;
+            _action =  action;
+        }
+
+        public void OnBindBlocks(StateMachine theMachine)
+        {
+            _theMachine = theMachine;
+            _theBlocks =_theMachine.FindBlockOrGroupbyName(_blockName);
+            _theBlocks = Array.FindAll<IMyTerminalBlock>(_theBlocks, block => block != null);
+
+            if (_theBlocks.Length == 0)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            }                  
+        }
+
+        public bool IsDone() { return true; }
+        public void OnExit() {}
+        public void OnTick() {}
+
+        public void OnEnter()
+        {
+            for (int i=0;i<_theBlocks.Length;i++)
+            {
+                ((IMyTerminalBlock)_theBlocks[i]).ApplyAction(_action);
+            }
+        }
+    } 
+
     public class SetEnabledAction : IStateAction
     {
         // Configuration
@@ -551,7 +643,12 @@ namespace IngameScript
 
         public bool IsDone()
         {
-            return _theConnector.Status == _desiredState;
+            if (_desiredState == MyShipConnectorStatus.Connected) 
+            {
+                return _theConnector.Status == _desiredState;
+            }
+
+            return _theConnector.Status != MyShipConnectorStatus.Connected;
         }
 
         public void OnExit() {}
@@ -581,7 +678,6 @@ namespace IngameScript
         // State data
         private StateMachine _theMachine;
         private IMyTextSurface _theSurface;
-        private IMySensorBlock _theSensor;
 
         public SetLCDTextAction(string blockName, string message, int screenIndex, Color? textColor, Color? BackColor)
         {

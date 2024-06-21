@@ -20,10 +20,12 @@ namespace IngameScript
         public static readonly string OPTION_ONLY_VALID_AFTER_MACHINE = "Option: is only valid after Machine: and before State:";
         public static readonly string DEPRECATED_FUNCTION = "Function '{0}' is deprecated, use '{1}' instead.";
         public static readonly string ACTION_ONLY_VALID_IN_STATE = "Action '{0}' only valid inside a state";
+        public static readonly string UNSUPPORTED_CONDITION = "Unsupported condition: {0}";
 
         // Trace messages
         public static readonly string TRC_SWITCHED_STATE = "Switching to state '{0}'";
         public static readonly string TRC_ACTIONS_DONE_WAITING = "Actions done for '{0}' waiting for transition.";
         public static readonly string TRC_COMMAND_NOTHANDLED = "Command not handled : {0} in state {1}";
+        public static readonly string TRC_FIND_BLOCK = "Block {0} found : {1}";
     }        
 }

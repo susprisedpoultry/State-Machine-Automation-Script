@@ -184,7 +184,7 @@ namespace IngameScript
                         {
                             Array.Resize(ref _displayTraces, _displayTraces.Length + 10);
                         }
-                        _displayTraces[_lastdisplayTrace] = new TraceMessage(4, message);
+                        _displayTraces[_lastdisplayTrace] = new TraceMessage(10, message);
                         break;
                     case OutputLevel.STATUS:
                         _displayStatus.Append(message);
