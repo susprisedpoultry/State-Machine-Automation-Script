@@ -79,6 +79,16 @@ namespace IngameScript
                 return new ConnectorStateCondition(whenCommand.Function.GetStringParam(0, "blockName"),
                                                    whenCommand.Function.GetValidatedStringParam(1, "blockName", Parser.CONNECTOR_STATES));
             }
+            else if (whenCommand.Function.IsFunctionMatch(Functions.ENABLEDSTATE, 2))
+            {
+                return new EnabledStateCondition(whenCommand.Function.GetStringParam(0, "blockName"),
+                                                 whenCommand.Function.GetValidatedStringParam(1, "triggerState", Parser.ENABLED_STATES));
+            }
+            else if (whenCommand.Function.IsFunctionMatch(Functions.MERGEDSTATE, 2))
+            {
+                return new MergedStateCondition(whenCommand.Function.GetStringParam(0, "blockName"),
+                                                whenCommand.Function.GetValidatedStringParam(1, "triggerState", Parser.TOP_ATTACHED_STATES));
+            }
             else if (whenCommand.Function.IsFunctionMatch(Functions.SENSORORSTATE, 2))
             {
                 return new SensorStateCondition(whenCommand.Function.GetStringParam(0, "blockName"),

@@ -104,6 +104,70 @@ namespace IngameScript
         }         
     }
 
+    public class EnabledStateCondition : ITransitionCondition 
+    {
+        // Configuration
+        private readonly string _blockName;        
+        private readonly bool _triggerOnEnabled;
+
+        // State data
+        private IMyFunctionalBlock _theBlock;
+
+        public EnabledStateCondition(string blockName, 
+                                     string triggerState)
+        {
+            _blockName = blockName;
+            _triggerOnEnabled = (triggerState == EnabledStates.ENABLED);
+        }
+
+        public void OnBindBlocks(StateMachine theMachine)
+        {
+            _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyFunctionalBlock;
+
+            if (_theBlock == null)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            }  
+        }
+
+        public bool IsMet()
+        {
+            return _theBlock.Enabled == _triggerOnEnabled;
+        }         
+    }
+
+    public class MergedStateCondition : ITransitionCondition 
+    {
+        // Configuration
+        private readonly string _blockName;        
+        private readonly bool _triggerOnMerged;
+
+        // State data
+        private IMyShipMergeBlock _theBlock;
+
+        public MergedStateCondition(string blockName, 
+                                    string triggerState)
+        {
+            _blockName = blockName;
+            _triggerOnMerged = (triggerState == TopAttachedStates.ATTACHED);
+        }
+
+        public void OnBindBlocks(StateMachine theMachine)
+        {
+            _theBlock = theMachine.TheProgram.GridTerminalSystem.GetBlockWithName(_blockName) as IMyShipMergeBlock;
+
+            if (_theBlock == null)
+            {
+                throw new Exception(String.Format(Messages.BLOCK_NOT_FOUND, _blockName));
+            }  
+        }
+
+        public bool IsMet()
+        {
+            return _theBlock.IsConnected == _triggerOnMerged;
+        }         
+    }           
+
     public class BlockPresentCondition : ITransitionCondition 
     {
 

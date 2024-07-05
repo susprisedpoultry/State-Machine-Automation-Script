@@ -67,6 +67,8 @@ namespace IngameScript
         public static readonly string COMMAND = "Command";
         public static readonly string CONNECTORSTATE = "ConnectorState";
         public static readonly string SENSORORSTATE = "SensorState";
+        public static readonly string ENABLEDSTATE = "EnabledState";
+        public static readonly string MERGEDSTATE = "MergedState";
         public static readonly string FOUNDBLOCKSTATE = "FoundBlockState";
         public static readonly string BLOCKTOPSTATE = "BlockTopState";
         public static readonly string BLOCKSALIGNED = "BlocksAligned";
